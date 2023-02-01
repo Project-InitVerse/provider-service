@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// NewServerTLSConfig create
 func NewServerTLSConfig(ctx context.Context, certs []tls.Certificate, cConfig *config.ProviderConfig) (*tls.Config, error) {
 	// InsecureSkipVerify is set to true due to inability to use normal TLS verification
 	// certificate validation and authentication performed in VerifyPeerCertificate
@@ -52,19 +53,19 @@ func NewServerTLSConfig(ctx context.Context, certs []tls.Certificate, cConfig *c
 				// 3. look up certificate on chain
 				fmt.Println("cert raw", base64.StdEncoding.EncodeToString(cert.Raw))
 				//Todo open chain check cert
-				conn, err := ethclient.Dial(cConfig.NodeUrl)
+				conn, err := ethclient.Dial(cConfig.NodeURL)
 				if false {
 					defer conn.Close()
-					cert_handle, err := util.NewCert(common.HexToAddress(cConfig.Cert), conn)
+					certHandle, err := util.NewCert(common.HexToAddress(cConfig.Cert), conn)
 					if err != nil {
 
 						return errors.Wrap(err, "tls: Unable to connect to the chain")
 					}
-					cert_state, err := cert_handle.UserCertState(nil, owner, string(cert.Raw))
+					certState, err := certHandle.UserCertState(nil, owner, string(cert.Raw))
 					if err != nil {
 						return errors.Wrap(err, "chain: Unable to connect to the chain")
 					}
-					if cert_state != 1 {
+					if certState != 1 {
 						return errors.New("tls: attempt to use non-existing or revoked certificate")
 					}
 

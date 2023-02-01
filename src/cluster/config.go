@@ -2,6 +2,7 @@ package cluster
 
 import "time"
 
+// Config is struct
 type Config struct {
 	InventoryResourcePollPeriod     time.Duration
 	InventoryResourceDebugFrequency uint
@@ -15,6 +16,7 @@ type Config struct {
 	ClusterSettings                 map[interface{}]interface{}
 }
 
+// NewDefaultConfig generate default config
 func NewDefaultConfig() Config {
 	return Config{
 		InventoryResourcePollPeriod:     time.Second * 5,

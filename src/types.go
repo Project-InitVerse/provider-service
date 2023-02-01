@@ -4,7 +4,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/ovrclk/provider-services/bidengine"
-	ctypes "providerService/src/cluster/types/v1beta2"
+	ctypes "providerService/src/cluster/types/v1"
 	"providerService/src/manifest"
 )
 
@@ -16,6 +16,7 @@ type Status struct {
 	ClusterPublicHostname string            `json:"cluster_public_hostname,omitempty"`
 }
 
+// ValidateGroupSpecResult is struct
 type ValidateGroupSpecResult struct {
 	MinBidPrice sdk.DecCoin `json:"min_bid_price"`
 }

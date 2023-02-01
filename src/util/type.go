@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// BlockData is struct of chain block
 type BlockData struct {
 	Difficulty               string        `json:"difficulty"`
 	ExtraData                string        `json:"extraData"`
@@ -39,6 +40,7 @@ type BlockData struct {
 	BaseFee                  string        `json:"baseFeePerGas"`
 }
 
+// BlockDataHeader is struct of chain block header
 type BlockDataHeader struct {
 	ExtraData        string `json:"-"`
 	Difficulty       int64  `json:"-"`
@@ -67,13 +69,19 @@ type BlockDataHeader struct {
 	L1FinalizeBlockNumber     string `json:"-"`
 	L1FinalizeTransactionHash string `json:"l1FinalizeTransactionHash"`
 }
+
+// Bloom type define
 type Bloom [256]byte
+
+// BlockNonce type define
 type BlockNonce [8]byte
 
+//UnmarshalText is decode block nonce
 func (n *BlockNonce) UnmarshalText(input []byte) error {
 	return hexutil.UnmarshalFixedText("BlockNonce", input, n[:])
 }
 
+//ChainHeader is chain header struct
 type ChainHeader struct {
 	ParentHash  common.Hash    `json:"parentHash"       gencodec:"required"`
 	UncleHash   common.Hash    `json:"sha3Uncles"       gencodec:"required"`
@@ -95,6 +103,7 @@ type ChainHeader struct {
 	BaseFee *big.Int `json:"baseFeePerGas" rlp:"optional"`
 }
 
+//InternalTransaction is internal trx struct
 type InternalTransaction struct {
 	BlockHash             string `json:"blockHash"`
 	BlockNumber           string `json:"blockNumber"`
@@ -107,6 +116,7 @@ type InternalTransaction struct {
 	Op                    string `json:"op"`
 }
 
+//TransactionLogs is trx log struct
 type TransactionLogs struct {
 	Address          string   `json:"address"`
 	BlockHash        string   `json:"blockHash"`
@@ -119,6 +129,7 @@ type TransactionLogs struct {
 	TransactionIndex string   `json:"transactionIndex"`
 }
 
+//CrossTransactionLogs is cross trx log struct
 type CrossTransactionLogs struct {
 	Address          string   `json:"address"`
 	BlockHash        string   `json:"blockHash"`
@@ -134,6 +145,7 @@ type CrossTransactionLogs struct {
 	Status           int      `json:"status"`
 }
 
+//TrxReceiptData is trx receipt struct
 type TrxReceiptData struct {
 	BlockHash         string            `json:"blockHash"`
 	BlockNumber       string            `json:"blockNumber"`
@@ -151,26 +163,30 @@ type TrxReceiptData struct {
 	Type              string            `json:"type"`
 }
 
+//TokenTransaction is token trx struct
 type TokenTransaction struct {
 	TransactionHash string `json:"transactionHash"`
 	LogIndex        string `json:"logIndex"`
 	Contract        string `json:"contract"`
 	TokenType       int    `json:"tokenType"`
 	Value           string `json:"value"`
-	TokenId         string `json:"tokenId"`
+	TokenID         string `json:"tokenId"`
 	From            string `json:"from"`
 	To              string `json:"to"`
-	MethodId        string `json:"methodId"`
+	MethodID        string `json:"methodId"`
 	BlockHash       string `json:"blockHash"`
 	BlockTime       int64  `json:"blockTime"`
 }
 
+//ContractObject is contract struct
 type ContractObject struct {
 	ContractAddress string `json:"contractAddress"`
 	CreateTxHash    string `json:"createTxHash"`
 	Creator         string `json:"creator"`
 	ByteCode        string `json:"byteCode"`
 }
+
+//UpdateContractObject is update contract struct
 type UpdateContractObject struct {
 	ContractAddress string `json:"contractAddress"`
 	ContractType    int    `json:"contractType"`
@@ -179,72 +195,85 @@ type UpdateContractObject struct {
 	TotalSupply     string `json:"totalSupply"`
 	Name            string `json:"name"`
 }
+
+//ContractNeedInit stores contract,token type
 type ContractNeedInit struct {
 	Contract  string `json:"contract"`
 	TokenType int    `json:"tokenType"`
 }
 
+//BalanceChange is struct
 type BalanceChange struct {
 	Address      string   `json:"address"`
 	Contract     string   `json:"contract"`
 	ContractType int      `json:"contractType"`
-	TokenId      string   `json:"tokenId"`
-	Value        *big.Int `_`
+	TokenID      string   `json:"tokenId"`
+	Value        *big.Int `json:"-"`
 }
+
+//VoteDetail is struct
 type VoteDetail struct {
 	Address         string   `json:"address"`
-	Contract        string   `json:"address"`
-	Value           *big.Int `_`
+	Contract        string   `json:"contract"`
+	Value           *big.Int `json:"-"`
 	LogIndex        string   `json:"logIndex"`
 	TransactionHash string   `json:"transactionHash"`
 }
+
+//ValidatorState is struct
 type ValidatorState struct {
 	Address  string `json:"address"`
-	Contract string `json:"address"`
+	Contract string `json:"contract"`
 	State    int    `json:"state"`
 	Active   int    `json:"active"`
 }
 
+//GetAddress is function get address for use
 func GetAddress(addr string) string {
 	return strings.ToLower(common.HexToAddress(addr).String())
 }
 
-func GetBigInt(int_str string, base int) *big.Int {
-	if int_str == "" {
+//GetBigInt is function convent string to big.int type
+func GetBigInt(intStr string, base int) *big.Int {
+	if intStr == "" {
 		return big.NewInt(0)
 	}
-	if int_str == "0x" {
+	if intStr == "0x" {
 		return big.NewInt(0)
 	}
-	if strings.HasPrefix(int_str, "0x") {
-		int_str = int_str[2:]
+	if strings.HasPrefix(intStr, "0x") {
+		intStr = intStr[2:]
 	}
-	big_int, _ := big.NewInt(0).SetString(int_str, base)
+	bigInt, _ := big.NewInt(0).SetString(intStr, base)
 
-	return big_int
+	return bigInt
 }
-func GetBigIntString(int_str string, base int) string {
-	if strings.HasPrefix(int_str, "0x") {
-		int_str = int_str[2:]
+
+//GetBigIntString is function convent big.int to string
+func GetBigIntString(intStr string, base int) string {
+	if strings.HasPrefix(intStr, "0x") {
+		intStr = intStr[2:]
 	}
-	if int_str == "" {
+	if intStr == "" {
 		return "0"
 	}
-	big_int, _ := big.NewInt(0).SetString(int_str, base)
+	bigInt, _ := big.NewInt(0).SetString(intStr, base)
 	//fmt.Println("GetBigIntString",int_str,big_int.String())
-	return big_int.String()
+	return bigInt.String()
 }
 
+//GetAbiStrings is function
 func GetAbiStrings(origins string) map[string]string {
 	res := make(map[string]string, 0)
 	len := GetBigInt(origins[66:130], 16).Int64()
 	for i := 0; i < int(len); i++ {
-		one_addr := "0x" + origins[130+i*64+24:130+(1+i)*64]
-		res[one_addr] = ""
+		oneAddr := "0x" + origins[130+i*64+24:130+(1+i)*64]
+		res[oneAddr] = ""
 	}
 	return res
 }
 
+//Transaction is struct for chain trx
 type Transaction struct {
 	Hash             string `json:"hash"`
 	Status           string `json:"status"`
@@ -267,27 +296,31 @@ type Transaction struct {
 	TransactionIndex string `json:"transactionIndex"`
 	L1Status         string `json:"l1Status"`
 }
+
+//NeedBid is struct
 type NeedBid struct {
 	ContractAddress string   `json:"contract_address"`
-	Cpu             *big.Int `json:"cpu"`
+	CPU             *big.Int `json:"cpu"`
 	Memory          *big.Int `json:"memory"`
 	Storage         *big.Int `json:"storage"`
-	Cert            string   `json:"cert"`
-	SdlTrxId        string   `json:"sdl_trx_id"`
+	Cert            *big.Int `json:"cert"`
+	SdlTrxID        string   `json:"sdl_trx_id"`
 	State           uint8    `json:"state"`
 }
+
+//NeedCreate is struct
 type NeedCreate struct {
 	Provider        common.Address `json:"provider"`
 	ContractAddress string         `json:"contract_address"`
-	CpuPrice        *big.Int       `json:"cpu_price"`
-	MemoryPrice     *big.Int       `json:"memory_price"`
-	StoragePrice    *big.Int       `json:"storage_price"`
 	FinalPrice      *big.Int       `json:"final_price"`
 }
+
+//UserCancelOrder stores contract addr
 type UserCancelOrder struct {
 	ContractAddress common.Address `json:"contract_address"`
 }
 
+//TransactionHandled is struct
 type TransactionHandled struct {
 	Hash             string `json:"hash"`
 	Status           int64  `json:"status"`
@@ -311,6 +344,7 @@ type TransactionHandled struct {
 	L1Status         int64  `json:"l1Status"`
 }
 
+//PrintMemStats is function
 func PrintMemStats() {
 
 	var m runtime.MemStats
@@ -321,6 +355,7 @@ func PrintMemStats() {
 
 }
 
+//ConvertLogToGethLogs is function
 func ConvertLogToGethLogs(logs TransactionLogs) types.Log {
 	bdata, _ := json.Marshal(logs)
 

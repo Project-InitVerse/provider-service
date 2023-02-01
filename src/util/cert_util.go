@@ -21,6 +21,7 @@ import (
 	"time"
 )
 
+//AuthVersionOID is ObjectIdentifier
 var AuthVersionOID = asn1.ObjectIdentifier{2, 23, 133, 2, 8}
 var (
 	errCertificateNotFoundInPEM = fmt.Errorf("%w: certificate not found in PEM", certerrors.ErrCertificate)
@@ -28,6 +29,7 @@ var (
 	errPublicKeyNotFoundInPEM   = fmt.Errorf("%w: public key not found in PEM", certerrors.ErrCertificate)
 )
 
+//KeyPairManager is interface
 type KeyPairManager interface {
 	KeyExists() (bool, error)
 
@@ -45,6 +47,7 @@ type keyPairManager struct {
 	homeDir       string
 }
 
+//NewKeyPairManager is function create key
 func NewKeyPairManager(fromAddress common.Address) (KeyPairManager, error) {
 
 	return &keyPairManager{

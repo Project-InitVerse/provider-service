@@ -15,6 +15,7 @@ var (
 	errInvalidEndpointFlagValue = errors.New("invalid endpoint flag value")
 )
 
+// AddServiceEndpointFlag is function add endpoint flag
 func AddServiceEndpointFlag(cmd *cobra.Command, serviceName string) error {
 	flagName := fmt.Sprintf("%s-endpoint", serviceName)
 	cmd.Flags().String(flagName, "", fmt.Sprintf("host & port for %s (empty for autodetect)", serviceName))
@@ -25,6 +26,7 @@ func AddServiceEndpointFlag(cmd *cobra.Command, serviceName string) error {
 	return nil
 }
 
+// GetServiceEndpointFlagValue is function get endpoint flag
 func GetServiceEndpointFlagValue(logger log.Logger, serviceName string) (*net.SRV, error) {
 	flagName := fmt.Sprintf("%s-endpoint", serviceName)
 	flagValue := viper.GetString(flagName)

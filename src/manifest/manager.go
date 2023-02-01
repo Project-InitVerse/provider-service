@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"time"
 
 	"github.com/boz/go-lifecycle"
@@ -20,7 +21,7 @@ import (
 	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
 	mtypes "github.com/ovrclk/akash/x/market/types/v1beta2"
 
-	clustertypes "providerService/src/cluster/types/v1beta2"
+	clustertypes "providerService/src/cluster/types/v1"
 	"providerService/src/event"
 	"providerService/src/session"
 )
@@ -29,6 +30,7 @@ const (
 	manifestLingerDuration = time.Minute * time.Duration(5)
 )
 
+// Define error
 var (
 	// ErrShutdownTimerExpired for a terminating deployment
 	ErrShutdownTimerExpired = errors.New("shutdown timer expired")
@@ -483,5 +485,5 @@ func (m *manager) checkHostnamesForManifest(requestManifest maniv2beta1.Manifest
 		}
 	}
 
-	return m.hostnameService.CanReserveHostnames(allHostnames, ownerAddr)
+	return m.hostnameService.CanReserveHostnames(allHostnames, common.HexToAddress(ownerAddr.String()))
 }

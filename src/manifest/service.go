@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	clustertypes "providerService/src/cluster/types/v1beta2"
+	clustertypes "providerService/src/cluster/types/v1"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"

@@ -7,19 +7,25 @@ import (
 	"strings"
 )
 
+// AllEvent is scan event
 type AllEvent struct {
 	CanQuote        string
 	UserCancelOrder string
 	ChooseQuote     string
+	OrderEnded      string
 }
 
-func (self *AllEvent) Init() {
-	self.ChooseQuote = crypto.Keccak256Hash([]byte("ChooseQuote((address,uint256,uint256,uint256),uint256)")).String()
-	self.UserCancelOrder = crypto.Keccak256Hash([]byte("UserCancelOrder()")).String()
-	self.CanQuote = crypto.Keccak256Hash([]byte("CanQuote()")).String()
+//Init is initialize function
+func (ae *AllEvent) Init() {
+	ae.ChooseQuote = crypto.Keccak256Hash([]byte("ChooseQuote(address,uint256)")).String()
+	ae.UserCancelOrder = crypto.Keccak256Hash([]byte("UserCancelOrder()")).String()
+	ae.CanQuote = crypto.Keccak256Hash([]byte("CanQuote()")).String()
+	ae.OrderEnded = crypto.Keccak256Hash([]byte("OrderEnded()")).String()
 
 }
-func (self *AllEvent) CheckEqual(a, b string) bool {
+
+//CheckEqual is function
+func (ae *AllEvent) CheckEqual(a, b string) bool {
 	if !strings.HasPrefix(a, "0x") {
 		a = "0x" + a
 	}
@@ -32,15 +38,20 @@ func (self *AllEvent) CheckEqual(a, b string) bool {
 	return false
 }
 
+//GenerateOrderCall is function
 func GenerateOrderCall(orderContract string) string {
 	addr := common.HexToAddress(orderContract)
-	method_id := "0x4bb21d44"
+	methodID := "0x4bb21d44"
 
-	return method_id + "000000000000000000000000" + addr.Hex()
+	return methodID + "000000000000000000000000" + addr.Hex()[2:]
 }
+
+//GetOrderFactory is function to order factory address
 func GetOrderFactory(config *config.ProviderConfig) string {
 	return config.OrderFactory
 }
+
+//GenerateOrderInfoCall is function
 func GenerateOrderInfoCall() string {
 	return "0x2500f01d"
 }

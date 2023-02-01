@@ -13,12 +13,14 @@ import (
 	"time"
 )
 
+//LinkClient stores url
 type LinkClient struct {
-	Url string
+	URL string
 }
 
-type HttpRequest struct {
-	Id     string        `json:"id"`
+//HTTPRequest is struct store http msg
+type HTTPRequest struct {
+	ID     string        `json:"id"`
 	Method string        `json:"method"`
 	Params []interface{} `json:"params"`
 }
@@ -51,17 +53,17 @@ func turnInterface(ina *[]interface{}) string {
 				message = message + "," + value.(string)
 			}
 		} else if reflect.TypeOf(value) == reflect.TypeOf(make(map[string]string)) {
-			bak_str := "{"
+			bakStr := "{"
 			for k, v := range value.(map[string]string) {
-				bak_str += "\"" + k + "\":\"" + v + "\","
+				bakStr += "\"" + k + "\":\"" + v + "\","
 			}
-			bak_str = bak_str[:len(bak_str)-1]
-			bak_str += "}"
+			bakStr = bakStr[:len(bakStr)-1]
+			bakStr += "}"
 			if message == "[" {
 
-				message = message + bak_str
+				message = message + bakStr
 			} else {
-				message = message + "," + bak_str
+				message = message + "," + bakStr
 			}
 		} else {
 			if message == "[" {
@@ -76,15 +78,16 @@ func turnInterface(ina *[]interface{}) string {
 	return message
 }
 
-func (client *LinkClient) SafeLinkHttpFunc(function string, params *[]interface{}) *simplejson.Json {
+// SafeLinkHTTPFunc is function to create safe http connect
+func (linkClient *LinkClient) SafeLinkHTTPFunc(function string, params *[]interface{}) *simplejson.Json {
 	sleepInterval := []int{5, 10, 20, 30, 40, 60, 120, 240, 480, 960, 1920, 3840}
 	index := 0
 	for {
-		return_value := client.LinkHttpFunc(function, params)
-		if return_value != nil {
-			_, exist := return_value.CheckGet("result")
+		returnValue := linkClient.LinkHTTPFunc(function, params)
+		if returnValue != nil {
+			_, exist := returnValue.CheckGet("result")
 			if exist {
-				return return_value
+				return returnValue
 			}
 		}
 		{
@@ -101,13 +104,14 @@ func (client *LinkClient) SafeLinkHttpFunc(function string, params *[]interface{
 	}
 }
 
-func (client *LinkClient) UnSafeLinkHttpFunc(function string, params *[]interface{}) *simplejson.Json {
+// UnSafeLinkHTTPFunc create unsafe http connect
+func (linkClient *LinkClient) UnSafeLinkHTTPFunc(function string, params *[]interface{}) *simplejson.Json {
 	sleepInterval := []int{5, 10, 20, 30, 40, 60, 120, 240, 480, 960, 1920, 3840}
 	index := 0
 	for {
-		return_value := client.LinkHttpFunc(function, params)
-		if return_value != nil {
-			return return_value
+		returnValue := linkClient.LinkHTTPFunc(function, params)
+		if returnValue != nil {
+			return returnValue
 		}
 		{
 
@@ -123,7 +127,8 @@ func (client *LinkClient) UnSafeLinkHttpFunc(function string, params *[]interfac
 	}
 }
 
-func (client *LinkClient) LinkHttpFunc(function string, params *[]interface{}) *simplejson.Json {
+// LinkHTTPFunc is function
+func (linkClient *LinkClient) LinkHTTPFunc(function string, params *[]interface{}) *simplejson.Json {
 	strParams := turnInterface(params)
 	transport := http.Transport{
 		DisableKeepAlives: true,
@@ -137,7 +142,7 @@ func (client *LinkClient) LinkHttpFunc(function string, params *[]interface{}) *
 	payload := strings.NewReader(message)
 	//fmt.Println(payload)
 
-	url := client.Url
+	url := linkClient.URL
 
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
@@ -177,10 +182,12 @@ func (client *LinkClient) LinkHttpFunc(function string, params *[]interface{}) *
 	//fmt.Println(js)
 	return js
 }
-func (client *LinkClient) HttpRpcFunction(function string, param *[]interface{}) string {
-	url := (*client).Url
 
-	a := HttpRequest{"1", function, *param}
+// HTTPRpcFunction is function
+func (linkClient *LinkClient) HTTPRpcFunction(function string, param *[]interface{}) string {
+	url := (*linkClient).URL
+
+	a := HTTPRequest{"1", function, *param}
 	fmt.Println(a)
 	b, _ := json.Marshal(a)
 	payload := strings.NewReader(string(b))
@@ -205,26 +212,26 @@ func (client *LinkClient) HttpRpcFunction(function string, param *[]interface{})
 	fmt.Println(string(body))
 	return string(body)
 }
-func (link_client *LinkClient) EthCall(address string, methodId string) string {
-	call_map := make(map[string]string, 0)
-	call_map["to"] = address
-	call_map["data"] = methodId
+
+//EthCall is function
+func (linkClient *LinkClient) EthCall(address string, methodID string) string {
+	callMap := make(map[string]string, 0)
+	callMap["to"] = address
+	callMap["data"] = methodID
 	//call_data,_ := json.Marshal(call_map)
-	call_param := make([]interface{}, 0, 2)
-	call_param = append(call_param, call_map)
-	call_param = append(call_param, "latest")
-	call_return, exist := link_client.UnSafeLinkHttpFunc("eth_call", &call_param).CheckGet("result")
+	callParam := make([]interface{}, 0, 2)
+	callParam = append(callParam, callMap)
+	callParam = append(callParam, "latest")
+	callReturn, exist := linkClient.UnSafeLinkHTTPFunc("eth_call", &callParam).CheckGet("result")
 
 	if exist {
-		call_res, err := call_return.String()
+		callRes, err := callReturn.String()
 		//fmt.Println(call_res,err)
 		if err != nil {
 			return "0x"
-		} else {
-			return call_res
 		}
+		return callRes
 
-	} else {
-		return "0x"
 	}
+	return "0x"
 }

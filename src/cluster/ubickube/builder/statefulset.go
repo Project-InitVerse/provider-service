@@ -10,6 +10,7 @@ import (
 	manitypes "github.com/ovrclk/akash/manifest/v2beta1"
 )
 
+//StatefulSet is interface
 type StatefulSet interface {
 	workloadBase
 	Create() (*appsv1.StatefulSet, error)
@@ -22,6 +23,7 @@ type statefulSet struct {
 
 var _ StatefulSet = (*statefulSet)(nil)
 
+//BuildStatefulSet is function create stateful set
 func BuildStatefulSet(log log.Logger, settings Settings, lid ctypes.LeaseID, group *manitypes.Group, service *manitypes.Service) StatefulSet {
 	return &statefulSet{
 		workload: newWorkloadBuilder(log, settings, lid, group, service),

@@ -5,6 +5,7 @@ import (
 	"fmt"
 )
 
+// Define errors
 var (
 	ErrKubeClient                = errors.New("kube")
 	ErrInternalError             = fmt.Errorf("%w: internal error", ErrKubeClient)

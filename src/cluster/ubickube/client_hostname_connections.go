@@ -33,7 +33,7 @@ type hostnameResourceEvent struct {
 func (c *client) DeclareHostname(ctx context.Context, lID ctypes.LeaseID, host string, serviceName string, externalPort uint32) error {
 	// Label each entry with the standard labels
 	labels := map[string]string{
-		builder.AkashManagedLabelName: "true",
+		builder.UbicManagedLabelName: "true",
 	}
 	builder.AppendLeaseLabels(lID, labels)
 
@@ -245,7 +245,7 @@ func (c *client) AllHostnames(ctx context.Context) ([]ctypes.ActiveHostname, err
 	})
 
 	listOptions := metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=true", builder.AkashManagedLabelName),
+		LabelSelector: fmt.Sprintf("%s=true", builder.UbicManagedLabelName),
 	}
 
 	result := make([]ctypes.ActiveHostname, 0)
@@ -255,12 +255,12 @@ func (c *client) AllHostnames(ctx context.Context) ([]ctypes.ActiveHostname, err
 		hostname := ph.Spec.Hostname
 		oseq := ph.Spec.Oseq
 
-		owner, ok := ph.Labels[builder.AkashLeaseOwnerLabelName]
+		owner, ok := ph.Labels[builder.UbicLeaseOwnerLabelName]
 		if !ok || len(owner) == 0 {
 			c.log.Error("providerhost missing owner label", "host", hostname)
 			return nil
 		}
-		provider, ok := ph.Labels[builder.AkashLeaseProviderLabelName]
+		provider, ok := ph.Labels[builder.UbicLeaseProviderLabelName]
 		if !ok || len(provider) == 0 {
 			c.log.Error("providerhost missing provider label", "host", hostname)
 			return nil

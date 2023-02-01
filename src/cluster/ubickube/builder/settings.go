@@ -44,8 +44,10 @@ type Settings struct {
 	DockerImagePullSecretsName string
 }
 
+// ErrSettingsValidation is declare error
 var ErrSettingsValidation = errors.New("settings validation")
 
+// ValidateSettings is function check setting validate
 func ValidateSettings(settings Settings) error {
 	if settings.DeploymentIngressStaticHosts {
 		if settings.DeploymentIngressDomain == "" {
@@ -60,6 +62,7 @@ func ValidateSettings(settings Settings) error {
 	return nil
 }
 
+// NewDefaultSettings is function create default setting
 func NewDefaultSettings() Settings {
 	return Settings{
 		DeploymentServiceType:          corev1.ServiceTypeClusterIP,
@@ -69,6 +72,8 @@ func NewDefaultSettings() Settings {
 	}
 }
 
+// ContextKey is string type
 type ContextKey string
 
+// SettingsKey is string type
 const SettingsKey = ContextKey("kube-client-settings")

@@ -1,5 +1,6 @@
 package flags
 
+//Define flag
 const (
 	FlagK8sManifestNS = "k8s-manifest-ns"
 

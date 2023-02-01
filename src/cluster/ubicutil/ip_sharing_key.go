@@ -1,4 +1,4 @@
-package ubicUtil
+package ubicutil
 
 import (
 	"crypto/sha256"
@@ -13,6 +13,7 @@ import (
 
 var allowedIPEndpointNameRegex = regexp.MustCompile(`^[a-z\d\-]+$`)
 
+// MakeIPSharingKey is function generate IP sharing key
 func MakeIPSharingKey(lID ctypes.LeaseID, endpointName string) string {
 	effectiveName := endpointName
 	if !allowedIPEndpointNameRegex.MatchString(endpointName) {

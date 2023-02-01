@@ -5,6 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// HostnameServiceClient is interFace
 type HostnameServiceClient interface {
 	ReserveHostnames(ctx context.Context, hostnames []string, leaseID LeaseID) ([]string, error)
 	ReleaseHostnames(leaseID LeaseID) error

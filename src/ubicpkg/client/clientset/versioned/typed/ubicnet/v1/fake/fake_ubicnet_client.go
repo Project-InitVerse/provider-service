@@ -19,7 +19,7 @@ limitations under the License.
 package fake
 
 import (
-	v1 "ubicpkg/client/clientset/versioned/typed/ubicnet/v1"
+	v1 "providerService/src/ubicpkg/client/clientset/versioned/typed/ubicnet/v1"
 
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"

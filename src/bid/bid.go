@@ -15,24 +15,32 @@ import (
 	ctypes "providerService/src/cluster/types/v1"
 	"providerService/src/config"
 	"providerService/src/util"
-	"providerService/ubic-cluster"
+	ubic_cluster "providerService/ubic-cluster"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
 
-type ResourceStorage struct {
-	CpuCount     *big.Int
+var (
+	orderStatusQuoting int64 = 1
+	orderStatusRunning int64 = 2
+	orderStatusEnded   int64 = 3
+)
+
+type resourceStorage struct {
+	CPUCount     *big.Int
 	MemoryCount  *big.Int
 	StorageCount *big.Int
 }
 
-type BidService struct {
+// Service is bid service
+type Service struct {
 	BidChan          <-chan util.NeedBid
 	BidFinalChan     <-chan util.NeedCreate
 	OrderFinish      <-chan util.UserCancelOrder
 	BidTimeout       <-chan time.Time
-	Total            ResourceStorage
+	Total            resourceStorage
 	Client           *ethclient.Client
 	Conf             *config.ProviderConfig
 	Cluster          *ubic_cluster.UbicService
@@ -41,31 +49,147 @@ type BidService struct {
 	MutexRw          *sync.RWMutex
 	Abi              map[string]abi.ABI
 	Ctx              context.Context
-	WgGlobal         *sync.WaitGroup
 	WgBid            *sync.WaitGroup
+	LastPayTime      int64
 }
 
-func (bs *BidService) Init(ctx context.Context, wg *sync.WaitGroup, config *config.ProviderConfig,
+// Init is service initialize function
+func (bs *Service) Init(ctx context.Context, config *config.ProviderConfig,
 	bidChan <-chan util.NeedBid,
 	bidFinal <-chan util.NeedCreate,
 	orderFinish <-chan util.UserCancelOrder,
 	cluster *ubic_cluster.UbicService) {
-	bs.Client, _ = ethclient.Dial(config.NodeUrl)
+	bs.Client, _ = ethclient.Dial(config.NodeURL)
 	bs.Conf = config
 	bs.BidFinalChan = bidFinal
 	bs.BidChan = bidChan
 	bs.OrderFinish = orderFinish
 	bs.MutexRw = new(sync.RWMutex)
 	bs.Abi = GetInteractiveABI()
-	bs.Total = bs.GetTotalResource()
 	bs.Cluster = cluster
+	bs.Total = bs.getTotalResource()
 	bs.BidTimeout = time.After(time.Duration(config.BidTimeOut) * time.Second)
 	bs.Ctx = ctx
-	bs.WgGlobal = wg
-	bs.WgGlobal.Add(1)
 	bs.WgBid = new(sync.WaitGroup)
+	bs.LastPayTime = time.Now().Unix()
+	bs.initExistDeployment()
 }
-func (bs *BidService) GetProviderAddr() string {
+func (bs *Service) updateResource() {
+	lens := 0
+	bs.KeepResource.Range(func(key, value interface{}) bool {
+		lens++
+		return true
+	})
+	zeroBig := new(big.Int).SetInt64(0)
+	if lens == 0 &&
+		bs.Total.CPUCount.Cmp(zeroBig) == 0 &&
+		bs.Total.MemoryCount.Cmp(zeroBig) == 0 &&
+		bs.Total.StorageCount.Cmp(zeroBig) == 0 {
+		/*
+			avaTotalTemp, err := bs.Cluster.GetTotalAvailable()
+			if err != nil {
+				return
+			}*/
+		totalTemp, err := bs.Cluster.GetTotalAvailable()
+		if err != nil {
+			return
+		}
+		providerContractAddr := common.HexToAddress(bs.Conf.ProviderContract)
+		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+		}
+		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		method := "updateResource"
+		data, err := bs.Abi[ProviderName].Pack(method, new(big.Int).SetUint64(totalTemp.CPU), new(big.Int).SetUint64(totalTemp.Memory), new(big.Int).SetUint64(totalTemp.StorageEphemeral))
+		if err != nil {
+			fmt.Println("err is ", err.Error())
+		}
+		msg := ethereum.CallMsg{
+			From: fromAddress,
+			To:   &providerContractAddr,
+			Gas:  0,
+			Data: data,
+		}
+		bs.Client.CallContract(context.Background(), msg, nil)
+	}
+}
+func (bs *Service) getAllProviderServOrders() []util.Order {
+	orderBase, _ := util.NewOrderFactory(common.HexToAddress(util.GetOrderFactory(bs.Conf)), bs.Client)
+	allProviderOrder, _ := orderBase.GetProviderAllOrder(nil, common.HexToAddress(bs.Conf.ProviderContract))
+	return allProviderOrder
+}
+func (bs *Service) initExistDeployment() {
+	allActiveLeases := bs.Cluster.GetAllActiveLeases()
+	orderInChain := bs.getAllProviderServOrders()
+	leaseLocal := make(map[string]int, 0)
+	for _, lease := range allActiveLeases {
+		state, orderAddr := bs.getOrderState(lease.OSeq)
+		fmt.Println("initExistDeployment", lease, state, orderAddr)
+		leaseLocal[strings.ToLower(orderAddr)] = 1
+		if state == orderStatusQuoting {
+			uri := bs.Cluster.GetURI(lease)
+			bs.submitURL(orderAddr, uri)
+			_, ok := bs.KeepResource.Load(strings.ToLower(orderAddr))
+			if !ok {
+				bs.KeepResource.Store(strings.ToLower(orderAddr), resourceStorage{
+					CPUCount:     big.NewInt(0),
+					MemoryCount:  big.NewInt(0),
+					StorageCount: big.NewInt(0),
+				})
+			}
+			_, ok = bs.KeepResourceTime.Load(strings.ToLower(orderAddr))
+			if !ok {
+				bs.KeepResourceTime.Store(strings.ToLower(orderAddr), time.Now().Unix())
+			}
+		} else if state == orderStatusRunning {
+			_, ok := bs.KeepResource.Load(strings.ToLower(orderAddr))
+			if !ok {
+				bs.KeepResource.Store(strings.ToLower(orderAddr), resourceStorage{
+					CPUCount:     big.NewInt(0),
+					MemoryCount:  big.NewInt(0),
+					StorageCount: big.NewInt(0),
+				})
+			}
+		} else if state == orderStatusEnded {
+			bs.Cluster.CloseManager(lease)
+		}
+	}
+	for _, orderSingle := range orderInChain {
+		if _, ok := leaseLocal[strings.ToLower(orderSingle.ContractAddress.String())]; ok {
+			continue
+		}
+		if int64(orderSingle.State) == orderStatusRunning {
+			sdlFile := bs.getSdlByID(orderSingle.ContractAddress.String())
+			owner := bs.getOwner(orderSingle.ContractAddress.String())
+			index := bs.getOrderIndex(orderSingle.ContractAddress.String())
+			lid := ctypes.LeaseID{
+				Owner:    "0x" + strings.TrimLeft(owner, "000000000000000000000000"),
+				OSeq:     index,
+				Provider: bs.Conf.ProviderContract,
+			}
+			uri, _ := bs.Cluster.NewUbicDeployManager(lid, sdlFile)
+			bs.submitURL(orderSingle.ContractAddress.String(), uri)
+		}
+	}
+}
+
+func (bs *Service) initTotalResource() {
+	avaTotal, err := bs.Cluster.GetTotalAvailable()
+	if err != nil {
+		log.Println("Bid get Left Total Resource error")
+		return
+	}
+	bs.Total.CPUCount = new(big.Int).SetUint64(avaTotal.CPU)
+	bs.Total.MemoryCount = new(big.Int).SetUint64(avaTotal.Memory)
+	bs.Total.StorageCount = new(big.Int).SetUint64(avaTotal.StorageEphemeral)
+}
+func (bs *Service) getProviderAddr() string {
 	providerFactoryAddr := common.HexToAddress(bs.Conf.ProviderFactoryContract)
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
@@ -92,7 +216,7 @@ func (bs *BidService) GetProviderAddr() string {
 	fmt.Println("result is", common.BytesToAddress(result).String())
 	return common.BytesToAddress(result).String()
 }
-func (bs *BidService) GetTotalResource() ResourceStorage {
+func (bs *Service) getTotalResource() resourceStorage {
 	providerContractAddr := common.HexToAddress(bs.Conf.ProviderContract)
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
@@ -116,27 +240,27 @@ func (bs *BidService) GetTotalResource() ResourceStorage {
 		Data: data,
 	}
 	result, err := bs.Client.CallContract(context.Background(), msg, nil)
-	var ret ResourceStorage
-	ret.CpuCount, _ = new(big.Int).SetString(common.Bytes2Hex(result[0:32]), 16)
+	var ret resourceStorage
+	ret.CPUCount, _ = new(big.Int).SetString(common.Bytes2Hex(result[0:32]), 16)
 	ret.MemoryCount, _ = new(big.Int).SetString(common.Bytes2Hex(result[32:64]), 16)
 	ret.StorageCount, _ = new(big.Int).SetString(common.Bytes2Hex(result[64:]), 16)
 	fmt.Println("result is", ret)
 	return ret
 }
-func (bs *BidService) HandleResource(resource ResourceStorage, add bool) {
+func (bs *Service) handleResource(resource resourceStorage, add bool) {
 	bs.MutexRw.Lock()
 	defer bs.MutexRw.Unlock()
 	if add {
-		bs.Total.CpuCount = bs.Total.CpuCount.Add(bs.Total.CpuCount, resource.CpuCount)
+		bs.Total.CPUCount = bs.Total.CPUCount.Add(bs.Total.CPUCount, resource.CPUCount)
 		bs.Total.MemoryCount = bs.Total.MemoryCount.Add(bs.Total.MemoryCount, resource.MemoryCount)
 		bs.Total.StorageCount = bs.Total.StorageCount.Add(bs.Total.StorageCount, resource.StorageCount)
 	} else {
-		bs.Total.CpuCount = bs.Total.CpuCount.Sub(bs.Total.CpuCount, resource.CpuCount)
+		bs.Total.CPUCount = bs.Total.CPUCount.Sub(bs.Total.CPUCount, resource.CPUCount)
 		bs.Total.MemoryCount = bs.Total.MemoryCount.Sub(bs.Total.MemoryCount, resource.MemoryCount)
 		bs.Total.StorageCount = bs.Total.StorageCount.Sub(bs.Total.StorageCount, resource.StorageCount)
 	}
 }
-func (bs *BidService) quoteBidOrder(orderContractAddr string) {
+func (bs *Service) quoteBidOrder(orderContractAddr string) {
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
 		log.Fatal(err)
@@ -158,7 +282,7 @@ func (bs *BidService) quoteBidOrder(orderContractAddr string) {
 		log.Fatal(err)
 	}
 	toAddress := common.HexToAddress(orderContractAddr)
-	cpuPrice, _ := new(big.Int).SetString(bs.Conf.CpuPrice, 10)
+	cpuPrice, _ := new(big.Int).SetString(bs.Conf.CPUPrice, 10)
 	memoryPrice, _ := new(big.Int).SetString(bs.Conf.MemoryPrice, 10)
 	storagePrice, _ := new(big.Int).SetString(bs.Conf.StoragePrice, 10)
 	method := "quote"
@@ -172,8 +296,8 @@ func (bs *BidService) quoteBidOrder(orderContractAddr string) {
 		Data:     data,
 	}
 	tx := types.NewTx(c)
-	chainId, _ := new(big.Int).SetString(bs.Conf.NodeChainId, 10)
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privateKey)
+	chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -183,7 +307,7 @@ func (bs *BidService) quoteBidOrder(orderContractAddr string) {
 	}
 	fmt.Println("tx sent: ", signedTx.Hash().Hex())
 }
-func (bs *BidService) SubmitUrl(orderContractAddr string, url string) {
+func (bs *Service) submitURL(orderContractAddr string, url string) {
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
 		log.Fatal(err)
@@ -217,8 +341,8 @@ func (bs *BidService) SubmitUrl(orderContractAddr string, url string) {
 		Data:     data,
 	}
 	tx := types.NewTx(c)
-	chainId, _ := new(big.Int).SetString(bs.Conf.NodeChainId, 10)
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainId), privateKey)
+	chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -226,10 +350,10 @@ func (bs *BidService) SubmitUrl(orderContractAddr string, url string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("tx sent: ", signedTx.Hash().Hex())
+	fmt.Println("submit url tx sent: ", signedTx.Hash().Hex())
 
 }
-func (bs *BidService) GetSdlById(orderContractAddr string) []byte {
+func (bs *Service) getSdlByID(orderContractAddr string) []byte {
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
 		log.Fatal(err)
@@ -250,12 +374,12 @@ func (bs *BidService) GetSdlById(orderContractAddr string) []byte {
 		Data: dataSdlTrx,
 	}
 	resultSdl, _ := bs.Client.CallContract(context.Background(), msgSdl, nil)
-	sdlTrxId := new(common.Hash)
-	sdlTrxId.SetBytes(resultSdl)
-	sdlTrx, _, _ := bs.Client.TransactionByHash(context.Background(), *sdlTrxId)
+	sdlTrxID := new(common.Hash)
+	sdlTrxID.SetBytes(resultSdl)
+	sdlTrx, _, _ := bs.Client.TransactionByHash(context.Background(), *sdlTrxID)
 	return sdlTrx.Data()
 }
-func (bs *BidService) GetOwner(orderContractAddr string) string {
+func (bs *Service) getOwner(orderContractAddr string) string {
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
 		log.Fatal(err)
@@ -278,7 +402,44 @@ func (bs *BidService) GetOwner(orderContractAddr string) string {
 	resultAddress, _ := bs.Client.CallContract(context.Background(), msgSdl, nil)
 	return common.Bytes2Hex(resultAddress)
 }
-func (bs *BidService) GetOrderIndex(orderContractAddr string) uint64 {
+func (bs *Service) getOrderState(index uint64) (int64, string) {
+	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	toAddress := common.HexToAddress(bs.Conf.OrderFactory)
+	methodOrders := "orders"
+	dataOrderTrx, _ := bs.Abi[OrderFactoryName].Pack(methodOrders, new(big.Int).SetUint64(index))
+	msgOrder := ethereum.CallMsg{
+		From: fromAddress,
+		To:   &toAddress,
+		Gas:  0,
+		Data: dataOrderTrx,
+	}
+	resultOrder, err := bs.Client.CallContract(context.Background(), msgOrder, nil)
+	if err != nil {
+		fmt.Println("result Order", err.Error())
+	}
+	hexOrderAddr := common.BytesToAddress(resultOrder)
+	methodOrderState := "order_status"
+	dataOrderStateTrx, _ := bs.Abi[OrderBaseName].Pack(methodOrderState)
+	msgOrderState := ethereum.CallMsg{
+		From: fromAddress,
+		To:   &hexOrderAddr,
+		Gas:  0,
+		Data: dataOrderStateTrx,
+	}
+	resultOrderState, _ := bs.Client.CallContract(context.Background(), msgOrderState, nil)
+	state, _ := strconv.ParseInt(common.Bytes2Hex(resultOrderState), 16, 64)
+	return state, hexOrderAddr.String()
+}
+func (bs *Service) getOrderIndex(orderContractAddr string) uint64 {
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
 		log.Fatal(err)
@@ -290,8 +451,8 @@ func (bs *BidService) GetOrderIndex(orderContractAddr string) uint64 {
 	}
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	toAddress := common.HexToAddress(orderContractAddr)
-	methodSdlTrx := "checkIsOrder"
-	dataSdlTrx, _ := bs.Abi[OrderFactoryName].Pack(methodSdlTrx)
+	methodSdlTrx := "o_order_number"
+	dataSdlTrx, _ := bs.Abi[OrderBaseName].Pack(methodSdlTrx)
 	msgSdl := ethereum.CallMsg{
 		From: fromAddress,
 		To:   &toAddress,
@@ -303,7 +464,7 @@ func (bs *BidService) GetOrderIndex(orderContractAddr string) uint64 {
 	index, _ := strconv.ParseUint(hex, 16, 64)
 	return index
 }
-func (bs *BidService) GetOrderCount(orderContractAddr string) ResourceStorage {
+func (bs *Service) getOrderCount(orderContractAddr string) resourceStorage {
 
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	if err != nil {
@@ -315,10 +476,10 @@ func (bs *BidService) GetOrderCount(orderContractAddr string) ResourceStorage {
 		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
 	}
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	methodCpu := "o_cpu"
+	methodCPU := "o_cpu"
 	methodMemory := "o_memory"
 	methodStorage := "o_storage"
-	dataCpu, err := bs.Abi[ProviderName].Pack(methodCpu)
+	dataCPU, err := bs.Abi[ProviderName].Pack(methodCPU)
 	if err != nil {
 		fmt.Println("err is ", err.Error())
 	}
@@ -331,11 +492,11 @@ func (bs *BidService) GetOrderCount(orderContractAddr string) ResourceStorage {
 		fmt.Println("err is ", err.Error())
 	}
 	toAddress := common.HexToAddress(orderContractAddr)
-	msgCpu := ethereum.CallMsg{
+	msgCPU := ethereum.CallMsg{
 		From: fromAddress,
 		To:   &toAddress,
 		Gas:  0,
-		Data: dataCpu,
+		Data: dataCPU,
 	}
 	msgMemory := ethereum.CallMsg{
 		From: fromAddress,
@@ -349,37 +510,78 @@ func (bs *BidService) GetOrderCount(orderContractAddr string) ResourceStorage {
 		Gas:  0,
 		Data: dataStorage,
 	}
-	resultCpu, _ := bs.Client.CallContract(context.Background(), msgCpu, nil)
+	resultCPU, _ := bs.Client.CallContract(context.Background(), msgCPU, nil)
 	resultMemory, _ := bs.Client.CallContract(context.Background(), msgMemory, nil)
 	resultStorage, _ := bs.Client.CallContract(context.Background(), msgStorage, nil)
-	var ret ResourceStorage
-	ret.CpuCount, _ = new(big.Int).SetString(common.Bytes2Hex(resultCpu), 16)
+	var ret resourceStorage
+	ret.CPUCount, _ = new(big.Int).SetString(common.Bytes2Hex(resultCPU), 16)
 	ret.MemoryCount, _ = new(big.Int).SetString(common.Bytes2Hex(resultMemory), 16)
 	ret.StorageCount, _ = new(big.Int).SetString(common.Bytes2Hex(resultStorage), 16)
 	fmt.Println("result is", ret)
 	return ret
 }
-func (bs *BidService) HandleBid(orderInfo *util.NeedBid) {
+func (bs *Service) payBill(orderContractAddr string) {
+	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+	}
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+	value := big.NewInt(0)      // in wei (1 eth)
+	gasLimit := uint64(3000000) // in units
+	gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
+	toAddress := common.HexToAddress(orderContractAddr)
+	methodBillTrx := "_pay_billing"
+	dataPayBillTrx, _ := bs.Abi[OrderBaseName].Pack(methodBillTrx, fromAddress)
+	c := &types.LegacyTx{
+		Nonce:    nonce,
+		To:       &toAddress,
+		Value:    value,
+		Gas:      gasLimit,
+		GasPrice: gasPrice,
+		Data:     dataPayBillTrx,
+	}
+	tx := types.NewTx(c)
+	chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = bs.Client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Pay Bill tx sent: ", signedTx.Hash().Hex())
+}
+func (bs *Service) handleBid(orderInfo *util.NeedBid) {
 	log.Println("in Handle bid")
 	log.Println(orderInfo.ContractAddress)
 	bs.WgBid.Add(1)
 	defer bs.WgBid.Done()
-	_, ok := bs.KeepResource.Load(orderInfo.ContractAddress)
+	_, ok := bs.KeepResource.Load(strings.ToLower(orderInfo.ContractAddress))
 	if ok {
 		log.Println("This has handled")
 		return
 	}
-	if bs.Total.CpuCount.Cmp(orderInfo.Cpu) >= 0 &&
+	if bs.Total.CPUCount.Cmp(orderInfo.CPU) >= 0 &&
 		bs.Total.MemoryCount.Cmp(orderInfo.Memory) >= 0 &&
 		bs.Total.StorageCount.Cmp(orderInfo.Storage) >= 0 {
 		bs.quoteBidOrder(orderInfo.ContractAddress)
-		bs.KeepResource.Store(orderInfo.ContractAddress, ResourceStorage{orderInfo.Cpu, orderInfo.Memory, orderInfo.Storage})
-		bs.KeepResourceTime.Store(orderInfo.ContractAddress, time.Now().Unix())
-		bs.HandleResource(ResourceStorage{orderInfo.Cpu, orderInfo.Memory, orderInfo.Storage}, false)
+		bs.KeepResource.Store(strings.ToLower(orderInfo.ContractAddress), resourceStorage{orderInfo.CPU, orderInfo.Memory, orderInfo.Storage})
+		bs.KeepResourceTime.Store(strings.ToLower(orderInfo.ContractAddress), time.Now().Unix())
+		bs.handleResource(resourceStorage{orderInfo.CPU, orderInfo.Memory, orderInfo.Storage}, false)
 	}
 }
-func (bs *BidService) HandleBidFinal(bidFinalInfo *util.NeedCreate) {
-	log.Println("in handle bid final")
+func (bs *Service) handleBidFinal(bidFinalInfo *util.NeedCreate) {
+	log.Println("in handle bid final", bidFinalInfo.ContractAddress)
 	bs.WgBid.Add(1)
 	defer bs.WgBid.Done()
 	privateKey, _ := crypto.HexToECDSA(bs.Conf.SecretKey)
@@ -389,89 +591,106 @@ func (bs *BidService) HandleBidFinal(bidFinalInfo *util.NeedCreate) {
 		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
 	}
 	providerAddr := crypto.PubkeyToAddress(*publicKeyECDSA)
-	resource, ok := bs.KeepResource.Load(bidFinalInfo.ContractAddress)
-	bs.KeepResourceTime.Delete(bidFinalInfo.ContractAddress)
-	if bidFinalInfo.Provider.String() != providerAddr.String() {
+	resource, ok := bs.KeepResource.Load(strings.ToLower(bidFinalInfo.ContractAddress))
+	bs.KeepResourceTime.Delete(strings.ToLower(bidFinalInfo.ContractAddress))
+	log.Println("in handle bid final providers ", bidFinalInfo.Provider.String(), providerAddr.String())
+	if bidFinalInfo.Provider.String() != bs.Conf.ProviderContract {
 		if ok {
-			bs.HandleResource(resource.(ResourceStorage), true)
+			bs.handleResource(resource.(resourceStorage), true)
 			return
 		}
 	} else {
 		if !ok {
-			orderSource := bs.GetOrderCount(bidFinalInfo.ContractAddress)
-			bs.KeepResource.Store(bidFinalInfo.ContractAddress, orderSource)
-			bs.HandleResource(orderSource, false)
+			orderSource := bs.getOrderCount(bidFinalInfo.ContractAddress)
+			bs.KeepResource.Store(strings.ToLower(bidFinalInfo.ContractAddress), orderSource)
+			bs.handleResource(orderSource, false)
 		}
 		log.Println(bs.Total)
-		sdlFile := bs.GetSdlById(bidFinalInfo.ContractAddress)
-		owner := bs.GetOwner(bidFinalInfo.ContractAddress)
-		index := bs.GetOrderIndex(bidFinalInfo.ContractAddress)
+		sdlFile := bs.getSdlByID(bidFinalInfo.ContractAddress)
+		owner := bs.getOwner(bidFinalInfo.ContractAddress)
+		index := bs.getOrderIndex(bidFinalInfo.ContractAddress)
+		fmt.Println(owner, index, bidFinalInfo.Provider.String())
 		lid := ctypes.LeaseID{
-			Owner:    owner,
+			Owner:    "0x" + strings.TrimLeft(owner, "000000000000000000000000"),
 			OSeq:     index,
 			Provider: bidFinalInfo.Provider.String(),
 		}
-		uris, _ := bs.Cluster.NewUbicDeployManager(lid, sdlFile)
-		var uri string
-		for _, v := range uris {
-			uri += v
-		}
-		bs.SubmitUrl(bidFinalInfo.ContractAddress, uri)
+		uri, _ := bs.Cluster.NewUbicDeployManager(lid, sdlFile)
+		bs.submitURL(bidFinalInfo.ContractAddress, uri)
 	}
 }
-func (bs *BidService) HandleOrderFinish(orderFinishInfo *util.UserCancelOrder) {
+func (bs *Service) handleOrderFinish(orderFinishInfo *util.UserCancelOrder) {
+	log.Println("in Handle HandleOrderFinish", orderFinishInfo.ContractAddress)
 	bs.WgBid.Add(1)
 	defer bs.WgBid.Done()
-	resource, ok := bs.KeepResource.Load(orderFinishInfo.ContractAddress.String())
-	if !ok {
-		return
+	resource, ok := bs.KeepResource.Load(strings.ToLower(orderFinishInfo.ContractAddress.String()))
+	if ok {
+		bs.handleResource(resource.(resourceStorage), true)
 	}
-	bs.HandleResource(resource.(ResourceStorage), true)
-	owner := bs.GetOwner(orderFinishInfo.ContractAddress.String())
-	index := bs.GetOrderIndex(orderFinishInfo.ContractAddress.String())
-	provider := bs.GetProviderAddr()
+	owner := bs.getOwner(orderFinishInfo.ContractAddress.String())
+	index := bs.getOrderIndex(orderFinishInfo.ContractAddress.String())
+	provider := bs.getProviderAddr()
 	lid := ctypes.LeaseID{
-		Owner:    owner,
+		Owner:    "0x" + strings.TrimLeft(owner, "000000000000000000000000"),
 		OSeq:     index,
 		Provider: provider,
 	}
-	bs.Cluster.CloseManager(lid)
+	allActiveLeases := bs.Cluster.GetAllActiveLeases()
+	for _, lease := range allActiveLeases {
+		if lease.Equals(lid) {
+			bs.Cluster.CloseManager(lease)
+			fmt.Println("HandleOrderFinish CloseManager")
+			break
+		}
+	}
 }
-func (bs *BidService) HandleRecoverResource() {
+func (bs *Service) handleRecoverResource() {
 	bs.WgBid.Add(1)
 	defer bs.WgBid.Done()
-	contractAddrs := make([]string, 0)
+	contractAdders := make([]string, 0)
 	bs.KeepResourceTime.Range(func(key any, value any) bool {
 		if value.(int64)+bs.Conf.BidTimeOut < time.Now().Unix() {
 			resourceTemp, ok := bs.KeepResource.Load(key)
 			if ok {
-				bs.HandleResource(resourceTemp.(ResourceStorage), true)
+				bs.handleResource(resourceTemp.(resourceStorage), true)
 			}
-			contractAddrs = append(contractAddrs, key.(string))
+			contractAdders = append(contractAdders, key.(string))
 		}
 		return true
 	})
-	for _, value := range contractAddrs {
-		bs.KeepResourceTime.Delete(value)
+	for _, value := range contractAdders {
+		bs.KeepResourceTime.Delete(strings.ToLower(value))
+	}
+	if bs.LastPayTime+10*bs.Conf.BidTimeOut < time.Now().Unix() {
+		allActiveLeases := bs.Cluster.GetAllActiveLeases()
+		for _, lease := range allActiveLeases {
+			_, orderAddr := bs.getOrderState(lease.OSeq)
+			bs.payBill(orderAddr)
+		}
+		bs.LastPayTime = time.Now().Unix()
 	}
 }
 
-func (bs *BidService) Run() {
+// Run is start bid service
+func (bs *Service) Run(wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+loop:
 	for {
 		select {
 		case bid := <-bs.BidChan:
-			go bs.HandleBid(&bid)
+			go bs.handleBid(&bid)
 		case bidFinalChan := <-bs.BidFinalChan:
-			go bs.HandleBidFinal(&bidFinalChan)
+			go bs.handleBidFinal(&bidFinalChan)
 		case orderFinish := <-bs.OrderFinish:
-			go bs.HandleOrderFinish(&orderFinish)
+			go bs.handleOrderFinish(&orderFinish)
 		case <-bs.BidTimeout:
-			go bs.HandleRecoverResource()
+			go bs.handleRecoverResource()
 			bs.BidTimeout = time.After(time.Duration(bs.Conf.BidTimeOut) * time.Second)
 		case <-bs.Ctx.Done():
 			bs.WgBid.Wait()
-			bs.WgGlobal.Done()
 			log.Println("bid service exit")
+			break loop
 		}
 	}
 }

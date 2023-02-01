@@ -4,6 +4,7 @@ import (
 	manifest "github.com/ovrclk/akash/manifest/v2beta1"
 )
 
+// IPResourceEvent is interFace
 type IPResourceEvent interface {
 	GetLeaseID() LeaseID
 	GetServiceName() string
@@ -14,6 +15,7 @@ type IPResourceEvent interface {
 	GetEventType() ProviderResourceEvent
 }
 
+// IPPassthrough is interFace
 type IPPassthrough interface {
 	GetLeaseID() LeaseID
 	GetServiceName() string
@@ -23,6 +25,7 @@ type IPPassthrough interface {
 	GetProtocol() manifest.ServiceProtocol
 }
 
+// IPLeaseState is interFace
 type IPLeaseState interface {
 	IPPassthrough
 	GetIP() string

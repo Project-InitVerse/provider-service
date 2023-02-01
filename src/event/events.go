@@ -54,11 +54,13 @@ type ClusterDeployment struct {
 	Status  ClusterDeploymentStatus
 }
 
+// LeaseAddFundsMonitor stores leaseID, IsNewLease
 type LeaseAddFundsMonitor struct {
 	mtypes.LeaseID
 	IsNewLease bool
 }
 
+// LeaseRemoveFundsMonitor stores leaseID
 type LeaseRemoveFundsMonitor struct {
 	mtypes.LeaseID
 }

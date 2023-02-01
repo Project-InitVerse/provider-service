@@ -1,4 +1,4 @@
-package ubicUtil
+package ubicutil
 
 import (
 	"os"
@@ -14,6 +14,7 @@ var checkedForKubernetes bool
 
 var kubeCheckLock sync.Mutex
 
+// IsInsideKubernetes is function check is inside k8s
 func IsInsideKubernetes() (bool, error) {
 	kubeCheckLock.Lock()
 	defer kubeCheckLock.Unlock()

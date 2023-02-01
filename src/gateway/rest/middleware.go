@@ -1,20 +1,14 @@
 package rest
 
 import (
-	"crypto/ecdsa"
 	"github.com/ethereum/go-ethereum/common"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/context"
-	gcontext "github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
-
-	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/tendermint/tendermint/libs/log"
 
 	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
 
@@ -85,20 +79,6 @@ func requireOwner() mux.MiddlewareFunc {
 
 			context.Set(r, ownerContextKey, owner)
 			next.ServeHTTP(w, r)
-		})
-	}
-}
-
-func requireDeploymentID() mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			id, err := parseDeploymentID(req)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			context.Set(req, deploymentContextKey, id)
-			next.ServeHTTP(w, req)
 		})
 	}
 }
@@ -208,43 +188,6 @@ func requestStreamParams() mux.MiddlewareFunc {
 			context.Set(req, servicesContextKey, services)
 
 			next.ServeHTTP(w, req)
-		})
-	}
-}
-
-func resourceServerAuth(log log.Logger, providerAddr sdk.Address, publicKey *ecdsa.PublicKey) mux.MiddlewareFunc {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// verify the provided JWT
-			token, err := jwt.ParseWithClaims(r.Header.Get("Authorization"), &ClientCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-				// return the public key to be used for JWT verification
-				return publicKey, nil
-			})
-			if err != nil {
-				log.Error("falied to parse JWT", "error", err)
-				http.Error(w, err.Error(), http.StatusUnauthorized)
-				return
-			}
-			// delete the Authorization header as it is no more needed
-			r.Header.Del("Authorization")
-
-			// store the owner & provider address in request context to be used in later handlers
-			customClaims, ok := token.Claims.(*ClientCustomClaims)
-			if !ok {
-				log.Error("failed to parse JWT claims")
-				http.Error(w, "Invalid JWT", http.StatusUnauthorized)
-				return
-			}
-			ownerAddress, err := sdk.AccAddressFromBech32(customClaims.Subject)
-			if err != nil {
-				log.Error("failed parsing owner address", "error", err, "address", customClaims.Subject)
-				http.Error(w, err.Error(), http.StatusUnauthorized)
-				return
-			}
-			gcontext.Set(r, ownerContextKey, ownerAddress)
-			gcontext.Set(r, providerContextKey, providerAddr)
-
-			next.ServeHTTP(w, r)
 		})
 	}
 }

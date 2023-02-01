@@ -12,6 +12,7 @@ import (
 	"github.com/ovrclk/provider-services/bidengine"
 )
 
+// Config is struct
 type Config struct {
 	ClusterWaitReadyDuration        time.Duration
 	ClusterPublicHostname           string
@@ -36,6 +37,7 @@ type Config struct {
 	CachedResultMaxAge              time.Duration
 }
 
+// NewDefaultConfig create default config
 func NewDefaultConfig() Config {
 	return Config{
 		ClusterWaitReadyDuration: time.Second * 10,

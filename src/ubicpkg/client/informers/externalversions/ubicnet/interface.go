@@ -19,8 +19,8 @@ limitations under the License.
 package ubicnet
 
 import (
-	internalinterfaces "ubicpkg/client/informers/externalversions/internalinterfaces"
-	v1 "ubicpkg/client/informers/externalversions/ubicnet/v1"
+	internalinterfaces "providerService/src/ubicpkg/client/informers/externalversions/internalinterfaces"
+	v1 "providerService/src/ubicpkg/client/informers/externalversions/ubicnet/v1"
 )
 
 // Interface provides access to each of this group's versions.

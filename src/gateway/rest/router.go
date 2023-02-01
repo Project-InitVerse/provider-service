@@ -3,7 +3,6 @@ package rest
 import (
 	"bufio"
 	"context"
-	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
 	gcontext "github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -24,7 +22,6 @@ import (
 	kubeVersion "k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/tools/remotecommand"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/tendermint/tendermint/libs/log"
 
 	manifest "github.com/ovrclk/akash/manifest/v2beta1"
@@ -34,14 +31,15 @@ import (
 
 	"providerService/src"
 	"providerService/src/cluster"
-	kubeclienterrors "providerService/src/cluster/kube/errors"
+	kubeclienterrors "providerService/src/cluster/ubickube/errors"
 
-	cltypes "providerService/src/cluster/types/v1beta2"
-	"providerService/src/cluster/util"
+	cltypes "providerService/src/cluster/types/v1"
+	util "providerService/src/cluster/ubicutil"
 	"providerService/src/gateway/utils"
 	pmanifest "providerService/src/manifest"
 )
 
+// CtxAuthKey type string
 type CtxAuthKey string
 
 const (
@@ -86,14 +84,6 @@ func newRouter(log log.Logger, addr common.Address, ubicSevice *ubic_cluster.Ubi
 		})
 	})
 
-	// GET /version
-	// provider version endpoint does not require authentication
-	//router.HandleFunc("/version",
-	//	createVersionHandler(log, pclient)).
-	//	Methods(http.MethodGet)
-
-	// GET /address
-	// provider status endpoint does not require authentication
 	router.HandleFunc("/address",
 		createAddressHandler(log, addr)).
 		Methods("GET")
@@ -145,31 +135,6 @@ func newRouter(log log.Logger, addr common.Address, ubicSevice *ubic_cluster.Ubi
 	return router
 }
 
-func newJwtServerRouter(addr sdk.Address, privateKey interface{}, jwtExpiresAfter time.Duration, certSerialNumber string) *mux.Router {
-	router := mux.NewRouter()
-
-	router.HandleFunc("/jwt",
-		jwtServiceHandler(addr, privateKey, jwtExpiresAfter, certSerialNumber)).
-		Methods("GET")
-
-	return router
-}
-
-func newResourceServerRouter(log log.Logger, providerAddr sdk.Address, publicKey *ecdsa.PublicKey, lokiGwAddr string) *mux.Router {
-	router := mux.NewRouter()
-
-	// add a middleware to verify the JWT provided in Authorization header
-	router.Use(resourceServerAuth(log, providerAddr, publicKey))
-
-	lrouter := router.PathPrefix(leasePathPrefix).Subrouter()
-	lrouter.Use(requireLeaseID())
-
-	//lokiServiceRouter := lrouter.PathPrefix("/loki-service").Subrouter()
-	//lokiServiceRouter.NewRoute().Handler(lokiServiceHandler(log, lokiGwAddr))
-
-	return router
-}
-
 // lokiServiceHandler forwards all requests to the loki instance running in provider's cluster.
 // Example:
 //
@@ -208,39 +173,6 @@ func newResourceServerRouter(log log.Logger, providerAddr sdk.Address, publicKey
 //		reverseProxy.ServeHTTP(w, r)
 //	}
 //}
-
-func jwtServiceHandler(paddr sdk.Address, privateKey interface{}, jwtExpiresAfter time.Duration, certSerialNumber string) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		now := time.Now()
-		claim := ClientCustomClaims{
-			AkashNamespace: &AkashNamespace{
-				V1: &ClaimsV1{
-					CertSerialNumber: certSerialNumber,
-				},
-			},
-			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(now.Add(jwtExpiresAfter)),
-				IssuedAt:  jwt.NewNumericDate(now),
-				// account address of the tenant: trustable as it has already been verified by mTLS
-				Subject: request.TLS.PeerCertificates[0].Subject.CommonName,
-				Issuer:  paddr.String(),
-			},
-		}
-
-		token := jwt.NewWithClaims(jwt.SigningMethodES256, &claim)
-		jwtString, err := token.SignedString(privateKey)
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		_, err = io.WriteString(writer, jwtString)
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
 
 type channelToTerminalSizeQueue <-chan remotecommand.TerminalSize
 
@@ -384,7 +316,7 @@ func leaseShellHandler(log log.Logger, ubicService *ubic_cluster.UbicService, cc
 
 			localLog.Info("lease shell completed", "exitcode", result.ExitCode())
 		} else {
-			if cluster.ErrorIsOkToSendToClient(err) {
+			if cluster.UbicErrorIsOkToSendToClient(err) {
 				responseData.Message = err.Error()
 			} else {
 				resultWriter = wsutil.NewWsWriterWrapper(shellWs, LeaseShellCodeFailure, l)
@@ -437,8 +369,8 @@ func createAddressHandler(log log.Logger, providerAddr common.Address) http.Hand
 }
 
 type versionInfo struct {
-	Akash utils.AkashVersionInfo `json:"akash"`
-	Kube  *kubeVersion.Info      `json:"kube"`
+	Akash utils.UbicVersionInfo `json:"akash"`
+	Kube  *kubeVersion.Info     `json:"kube"`
 }
 
 func createVersionHandler(log log.Logger, pclient provider.Client) http.HandlerFunc {
@@ -450,7 +382,7 @@ func createVersionHandler(log log.Logger, pclient provider.Client) http.HandlerF
 		}
 
 		writeJSON(log, w, versionInfo{
-			Akash: utils.NewAkashVersionInfo(),
+			Akash: utils.NewUbicVersionInfo(),
 			Kube:  kube,
 		})
 	}

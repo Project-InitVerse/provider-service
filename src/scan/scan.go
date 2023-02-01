@@ -19,43 +19,45 @@ import (
 	"time"
 )
 
+// Scan is struct
 type Scan struct {
-	linkClient      *util.LinkClient
-	height          uint
-	MaintainChan    chan util.Order
-	NeedBidChan     chan util.NeedBid
-	NeedCreateChan  chan util.NeedCreate
-	UserCancelChan  chan util.UserCancelOrder
-	collect_threads int
-	handle_threads  int
-	wg              sync.WaitGroup
-	exit_count      int32
-	allEvent        util.AllEvent
-	Config          *config.ProviderConfig
-	is_done         bool
+	linkClient     *util.LinkClient
+	height         uint
+	MaintainChan   chan util.Order
+	NeedBidChan    chan util.NeedBid
+	NeedCreateChan chan util.NeedCreate
+	UserCancelChan chan util.UserCancelOrder
+	collectThreads int
+	handleThreads  int
+	wg             sync.WaitGroup
+	exitCount      int32
+	allEvent       util.AllEvent
+	Config         *config.ProviderConfig
+	isDone         bool
 }
 
-func (self *Scan) QueryExsitMaintainOrder() {
+//QueryExsitMaintainOrder is function
+func (sc *Scan) QueryExsitMaintainOrder() {
 	//todo
 	for {
-		conn, err := ethclient.Dial(self.Config.NodeUrl)
+		conn, err := ethclient.Dial(sc.Config.NodeURL)
 		if err != nil {
 			log.Printf("Failed to connect to the Ethereum client %v", err)
 		} else {
 			defer conn.Close()
-			orderBase, err := util.NewOrderFactory(common.HexToAddress(util.GetOrderFactory(self.Config)), conn)
+			orderBase, err := util.NewOrderFactory(common.HexToAddress(util.GetOrderFactory(sc.Config)), conn)
 			if err != nil {
 				log.Printf("call orderBase failed")
 				continue
 			}
-			allProviderOrder, err := orderBase.GetProviderAllOrder(nil, common.HexToAddress(self.Config.ProviderContract))
+			allProviderOrder, err := orderBase.GetProviderAllOrder(nil, common.HexToAddress(sc.Config.ProviderContract))
 			if err != nil {
 				log.Printf("call orderBase failed")
 				continue
 			}
-			for _, one_order := range allProviderOrder {
-				if one_order.State == 2 {
-					self.MaintainChan <- one_order
+			for _, oneOrder := range allProviderOrder {
+				if oneOrder.State == 2 {
+					sc.MaintainChan <- oneOrder
 				}
 			}
 
@@ -65,75 +67,77 @@ func (self *Scan) QueryExsitMaintainOrder() {
 	}
 }
 
-func (self *Scan) MainLoop(ctx context.Context, link_client *util.LinkClient, global_wg *sync.WaitGroup) {
-	global_wg.Add(1)
-	defer global_wg.Done()
-	blockdata_chan := make(chan simplejson.Json, 40)
-	height_chan := make(chan int, 40)
-	self.wg.Add(self.handle_threads + self.collect_threads)
-	for i := 0; i < self.collect_threads; i++ {
-		go self.collect_block(link_client, height_chan, blockdata_chan)
+//MainLoop is service get info from chain
+func (sc *Scan) MainLoop(ctx context.Context, linkClient *util.LinkClient, globalWg *sync.WaitGroup) {
+	globalWg.Add(1)
+	defer globalWg.Done()
+	blockDataChan := make(chan simplejson.Json, 40)
+	heightChan := make(chan int, 40)
+	sc.wg.Add(sc.handleThreads + sc.collectThreads)
+	for i := 0; i < sc.collectThreads; i++ {
+		go sc.collectBlock(linkClient, heightChan, blockDataChan)
 	}
 
-	for i := 0; i < self.handle_threads; i++ {
-		go self.handle_block_new(link_client, blockdata_chan, 1000)
+	for i := 0; i < sc.handleThreads; i++ {
+		go sc.handleBlockNew(linkClient, blockDataChan, 1000)
 	}
-	old_count := 0
+	oldCount := 0
 
 	go func() {
 		select {
 		case <-ctx.Done():
-			self.quit()
+			sc.quit()
 			break
 		}
 	}()
-	for !self.is_done {
+	for !sc.isDone {
 
 		param := make([]interface{}, 0)
-		json_data := link_client.SafeLinkHttpFunc("eth_blockNumber", &param)
-		res_count, _ := json_data.Get("result").String()
+		jsonData := linkClient.SafeLinkHTTPFunc("eth_blockNumber", &param)
+		resCount, _ := jsonData.Get("result").String()
 
-		count64, _ := strconv.ParseInt(res_count[2:], 16, 32)
+		count64, _ := strconv.ParseInt(resCount[2:], 16, 32)
 		count := int(count64) - 2
-		if old_count == 0 {
-			old_count = count - 1
+		//TODO for test
+		if oldCount == 0 {
+			oldCount = count - 1
 		}
-		fmt.Println(old_count, count)
-		if old_count < count {
+		if oldCount < count {
 			//fmt.Println("current height:", old_count, "target height", count, "time", time.Now())
-			for i := old_count; i < count; i++ {
-				height_chan <- i
+			for i := oldCount; i < count; i++ {
+				heightChan <- i
 			}
-			old_count = count
+			oldCount = count
 		} else {
 			time.Sleep(5 * time.Second)
 		}
 
 	}
-	for i := 0; i < self.collect_threads; i++ {
-		height_chan <- -1
+	for i := 0; i < sc.collectThreads; i++ {
+		heightChan <- -1
 	}
-	self.wg.Wait()
+	sc.wg.Wait()
 }
-func (self *Scan) quit() {
-	self.is_done = true
+func (sc *Scan) quit() {
+	sc.isDone = true
 
 }
 
-func (self *Scan) InitScan(pConfig *config.ProviderConfig) {
-	self.allEvent = util.AllEvent{}
-	self.allEvent.Init()
-	self.Config = pConfig
-	self.NeedBidChan = make(chan util.NeedBid, 20)
-	self.UserCancelChan = make(chan util.UserCancelOrder, 20)
-	self.NeedCreateChan = make(chan util.NeedCreate, 20)
-	self.collect_threads = 1
-	self.handle_threads = 1
-	self.is_done = false
+//InitScan init scan service
+func (sc *Scan) InitScan(pConfig *config.ProviderConfig) {
+	sc.allEvent = util.AllEvent{}
+	sc.allEvent.Init()
+	sc.Config = pConfig
+	sc.NeedBidChan = make(chan util.NeedBid, 20)
+	sc.UserCancelChan = make(chan util.UserCancelOrder, 20)
+	sc.NeedCreateChan = make(chan util.NeedCreate, 20)
+	sc.collectThreads = 1
+	sc.handleThreads = 1
+	sc.isDone = false
 }
 
-func (scan *Scan) collect_block(link_client *util.LinkClient, height_chan chan int, blockdata_chan chan simplejson.Json) {
-	defer scan.wg.Done()
+func (sc *Scan) collectBlock(linkClient *util.LinkClient, heightChan chan int, blockDataChan chan simplejson.Json) {
+	defer sc.wg.Done()
 
 	//vin := &pro.TrxObject_VIN{}
 	//trx_object := pro.TrxObject{}
@@ -141,45 +145,45 @@ func (scan *Scan) collect_block(link_client *util.LinkClient, height_chan chan i
 
 	for {
 		param := make([]interface{}, 0, 2)
-		once_height := <-height_chan
-		if once_height == -1 {
+		onceHeight := <-heightChan
+		if onceHeight == -1 {
 			fmt.Println("collect exit")
-			atomic.AddInt32(&scan.exit_count, int32(1))
-			json_data, _ := simplejson.NewJson([]byte("{\"result\":\"exit\"}"))
-			blockdata_chan <- *json_data
+			atomic.AddInt32(&sc.exitCount, int32(1))
+			jsonData, _ := simplejson.NewJson([]byte("{\"result\":\"exit\"}"))
+			blockDataChan <- *jsonData
 
 			return
 		}
-		param = append(param, "0x"+strconv.FormatInt(int64(once_height), 16))
+		param = append(param, "0x"+strconv.FormatInt(int64(onceHeight), 16))
 		param = append(param, "true")
-		blockdata := link_client.SafeLinkHttpFunc("eth_getBlockByNumber", &param)
-		if once_height%1000 == 0 {
-			fmt.Println("height", once_height, "chan size", len(blockdata_chan))
+		blockdata := linkClient.SafeLinkHTTPFunc("eth_getBlockByNumber", &param)
+		if onceHeight%1000 == 0 {
+			fmt.Println("height", onceHeight, "chan size", len(blockDataChan))
 		}
-		blockdata_chan <- *blockdata
-		Hash, _ := blockdata.Get("result").Get("hash").String()
-		log.Printf("number:%d hash:%s", once_height, Hash)
+		blockDataChan <- *blockdata
+		//Hash, _ := blockdata.Get("result").Get("hash").String()
+		//log.Printf("number:%d hash:%s", once_height, Hash)
 
 	}
 }
 
-func (self *Scan) handle_block_new(link_client *util.LinkClient, blockdata_chan chan simplejson.Json, interval int64) {
-	defer self.wg.Done()
+func (sc *Scan) handleBlockNew(linkClient *util.LinkClient, blockdataChan chan simplejson.Json, interval int64) {
+	defer sc.wg.Done()
 
 	for {
-		blockchain_data := <-blockdata_chan
+		blockchainData := <-blockdataChan
 
-		exit_code, err := blockchain_data.Get("result").String()
+		exitCode, err := blockchainData.Get("result").String()
 		if err == nil {
 
-			if exit_code == "exit" {
-				for self.exit_count < int32(self.collect_threads) {
+			if exitCode == "exit" {
+				for sc.exitCount < int32(sc.collectThreads) {
 					time.Sleep(1 * time.Second)
 				}
-				if self.exit_count < int32(self.handle_threads) {
-					atomic.AddInt32(&self.exit_count, int32(1))
-					json_data, _ := simplejson.NewJson([]byte("{\"result\":\"exit\"}"))
-					blockdata_chan <- *json_data
+				if sc.exitCount < int32(sc.handleThreads) {
+					atomic.AddInt32(&sc.exitCount, int32(1))
+					jsonData, _ := simplejson.NewJson([]byte("{\"result\":\"exit\"}"))
+					blockdataChan <- *jsonData
 				}
 				//flush_db_nosync(&trx_cache,&erc20_address_trx_cache)
 
@@ -188,7 +192,7 @@ func (self *Scan) handle_block_new(link_client *util.LinkClient, blockdata_chan 
 				return
 			}
 		}
-		bdata, _ := blockchain_data.Get("result").MarshalJSON()
+		bdata, _ := blockchainData.Get("result").MarshalJSON()
 
 		var blockData util.BlockData
 		err = json.Unmarshal(bdata, &blockData)
@@ -197,14 +201,14 @@ func (self *Scan) handle_block_new(link_client *util.LinkClient, blockdata_chan 
 			continue
 		}
 
-		blockTime := get_int(blockData.Timestamp)
+		blockTime := getInt(blockData.Timestamp)
 		blockReward := big.NewInt(0)
-		for _, trx_data := range blockData.Transactions {
-			blockReward = blockReward.Add(blockReward, self.handle_transaction(link_client, &trx_data, blockTime))
+		for _, trxData := range blockData.Transactions {
+			blockReward = blockReward.Add(blockReward, sc.handleTransaction(linkClient, &trxData, blockTime))
 		}
 
-		tmp_height := get_int(blockData.Number)
-		if tmp_height%interval == 0 {
+		tmpHeight := getInt(blockData.Number)
+		if tmpHeight%interval == 0 {
 			runtime.GC()
 		}
 
@@ -212,21 +216,21 @@ func (self *Scan) handle_block_new(link_client *util.LinkClient, blockdata_chan 
 
 }
 
-func get_int(int_str string) int64 {
-	if strings.HasPrefix(int_str, "0x") {
-		value, _ := strconv.ParseInt(int_str[2:], 16, 32)
-		return value
-	} else {
-		value, _ := strconv.ParseInt(int_str, 10, 32)
+func getInt(intStr string) int64 {
+	if strings.HasPrefix(intStr, "0x") {
+		value, _ := strconv.ParseInt(intStr[2:], 16, 32)
 		return value
 	}
+	value, _ := strconv.ParseInt(intStr, 10, 32)
+	return value
 }
 
+// TrxData is struct
 type TrxData struct {
 	AccessList           []interface{} `json:"accessList"`
 	BlockHash            string        `json:"blockHash"`
 	BlockNumber          string        `json:"blockNumber"`
-	ChainId              string        `json:"chainId"`
+	ChainID              string        `json:"chainId"`
 	From                 string        `json:"from"`
 	Gas                  string        `json:"gas"`
 	GasPrice             string        `json:"gasPrice"`
@@ -244,115 +248,115 @@ type TrxData struct {
 	Value                string        `json:"value"`
 }
 
-func (self *Scan) handle_transaction(link_client *util.LinkClient, trx_data *interface{}, blockTime int64) *big.Int {
+func (sc *Scan) handleTransaction(linkClient *util.LinkClient, trxData *interface{}, blockTime int64) *big.Int {
 
-	trx_map_obj := make(map[string]interface{})
+	trxMapObj := make(map[string]interface{})
 	reward := big.NewInt(0)
-	var trx_simple_data TrxData
-	bdata, _ := json.Marshal(*trx_data)
-	err := json.Unmarshal(bdata, &trx_simple_data)
+	var trxSimpleData TrxData
+	bdata, _ := json.Marshal(*trxData)
+	err := json.Unmarshal(bdata, &trxSimpleData)
 	if err != nil {
 		fmt.Println("transaction Decode Failed!", err)
 		return reward
 	}
 	param := make([]interface{}, 0, 20)
-	param = append(param, trx_simple_data.Hash)
-	trxReceiptData, _ := link_client.SafeLinkHttpFunc("eth_getTransactionReceipt", &param).Get("result").MarshalJSON()
+	param = append(param, trxSimpleData.Hash)
+	trxReceiptData, _ := linkClient.SafeLinkHTTPFunc("eth_getTransactionReceipt", &param).Get("result").MarshalJSON()
 	var trxReceipt util.TrxReceiptData
 	err = json.Unmarshal(trxReceiptData, &trxReceipt)
 	if err != nil {
 		fmt.Println(err)
 		return reward
 	}
-	trx_map_obj["hash"] = trx_simple_data.Hash
-	trx_map_obj["blockNumber"] = trx_simple_data.BlockNumber
-	trx_map_obj["blockHash"] = trx_simple_data.BlockHash
-	trx_map_obj["from"] = trx_simple_data.From
-	trx_map_obj["to"] = trx_simple_data.To
-	trx_map_obj["gasLimit"] = trx_simple_data.Gas
+	trxMapObj["hash"] = trxSimpleData.Hash
+	trxMapObj["blockNumber"] = trxSimpleData.BlockNumber
+	trxMapObj["blockHash"] = trxSimpleData.BlockHash
+	trxMapObj["from"] = trxSimpleData.From
+	trxMapObj["to"] = trxSimpleData.To
+	trxMapObj["gasLimit"] = trxSimpleData.Gas
 	gasUsed := util.GetBigInt(trxReceipt.GasUsed, 16)
 	if gasUsed == nil {
 		gasUsed = big.NewInt(0)
 	}
-	if trx_simple_data.Type == "0x0" {
-		trx_map_obj["gasPrice"] = trx_simple_data.GasPrice
-		trx_map_obj["maxPriority"] = ""
-		trx_map_obj["maxFee"] = ""
+	if trxSimpleData.Type == "0x0" {
+		trxMapObj["gasPrice"] = trxSimpleData.GasPrice
+		trxMapObj["maxPriority"] = ""
+		trxMapObj["maxFee"] = ""
 		if trxReceipt.EffectiveGasPrice != "" {
 			efGas := util.GetBigInt(trxReceipt.EffectiveGasPrice, 16)
-			gasP := big.NewInt(0).Sub(util.GetBigInt(trx_simple_data.GasPrice, 16), efGas)
+			gasP := big.NewInt(0).Sub(util.GetBigInt(trxSimpleData.GasPrice, 16), efGas)
 			reward = reward.Mul(gasUsed, gasP)
 		} else {
 
-			reward = reward.Mul(gasUsed, util.GetBigInt(trx_simple_data.GasPrice, 16))
+			reward = reward.Mul(gasUsed, util.GetBigInt(trxSimpleData.GasPrice, 16))
 		}
 
-		trx_map_obj["fee"] = big.NewInt(0).Mul(util.GetBigInt(trx_simple_data.GasPrice, 16), gasUsed).String()
-	} else if trx_simple_data.Type == "0x2" {
-		trx_map_obj["maxPriority"] = trx_simple_data.MaxPriorityFeePerGas
-		trx_map_obj["maxFee"] = trx_simple_data.MaxFeePerGas
-		trx_map_obj["gasPrice"] = trxReceipt.EffectiveGasPrice
+		trxMapObj["fee"] = big.NewInt(0).Mul(util.GetBigInt(trxSimpleData.GasPrice, 16), gasUsed).String()
+	} else if trxSimpleData.Type == "0x2" {
+		trxMapObj["maxPriority"] = trxSimpleData.MaxPriorityFeePerGas
+		trxMapObj["maxFee"] = trxSimpleData.MaxFeePerGas
+		trxMapObj["gasPrice"] = trxReceipt.EffectiveGasPrice
 		efGas := util.GetBigInt(trxReceipt.EffectiveGasPrice, 16)
-		maxF := util.GetBigInt(trx_simple_data.MaxFeePerGas, 16)
+		maxF := util.GetBigInt(trxSimpleData.MaxFeePerGas, 16)
 
 		reward = reward.Mul(gasUsed, maxF)
-		trx_map_obj["fee"] = big.NewInt(0).Mul(gasUsed, efGas).String()
+		trxMapObj["fee"] = big.NewInt(0).Mul(gasUsed, efGas).String()
 	} else {
-		trx_map_obj["gasPrice"] = trx_simple_data.GasPrice
-		trx_map_obj["maxPriority"] = ""
-		trx_map_obj["maxFee"] = ""
+		trxMapObj["gasPrice"] = trxSimpleData.GasPrice
+		trxMapObj["maxPriority"] = ""
+		trxMapObj["maxFee"] = ""
 		if trxReceipt.EffectiveGasPrice != "" {
 			efGas := util.GetBigInt(trxReceipt.EffectiveGasPrice, 16)
-			gasP := big.NewInt(0).Sub(util.GetBigInt(trx_simple_data.GasPrice, 16), efGas)
+			gasP := big.NewInt(0).Sub(util.GetBigInt(trxSimpleData.GasPrice, 16), efGas)
 			reward = reward.Mul(gasUsed, gasP)
 		} else {
 
-			reward = reward.Mul(gasUsed, util.GetBigInt(trx_simple_data.GasPrice, 16))
+			reward = reward.Mul(gasUsed, util.GetBigInt(trxSimpleData.GasPrice, 16))
 		}
 
-		trx_map_obj["fee"] = big.NewInt(0).Mul(util.GetBigInt(trx_simple_data.GasPrice, 16), gasUsed).String()
+		trxMapObj["fee"] = big.NewInt(0).Mul(util.GetBigInt(trxSimpleData.GasPrice, 16), gasUsed).String()
 	}
-	trx_map_obj["to"] = trx_simple_data.To
-	trx_map_obj["blockTime"] = blockTime
-	trx_map_obj["transactionType"] = trx_simple_data.Type
-	trx_map_obj["value"] = trx_simple_data.Value
-	trx_map_obj["inputData"] = trx_simple_data.Input
-	trx_map_obj["gasUsed"] = trxReceipt.GasUsed
-	trx_map_obj["status"] = trxReceipt.Status
-	trx_map_obj["nonce"] = trx_simple_data.Nonce
-	trx_map_obj["transactionIndex"] = trx_simple_data.TransactionIndex
+	trxMapObj["to"] = trxSimpleData.To
+	trxMapObj["blockTime"] = blockTime
+	trxMapObj["transactionType"] = trxSimpleData.Type
+	trxMapObj["value"] = trxSimpleData.Value
+	trxMapObj["inputData"] = trxSimpleData.Input
+	trxMapObj["gasUsed"] = trxReceipt.GasUsed
+	trxMapObj["status"] = trxReceipt.Status
+	trxMapObj["nonce"] = trxSimpleData.Nonce
+	trxMapObj["transactionIndex"] = trxSimpleData.TransactionIndex
 
 	if trxReceipt.Status == "0x1" {
-		for _, one_log := range trxReceipt.Logs {
+		for _, oneLog := range trxReceipt.Logs {
 			// CanQuote()
 
-			if len(one_log.Topics) > 0 {
-				if self.allEvent.CheckEqual(self.allEvent.CanQuote, one_log.Topics[0]) {
+			if len(oneLog.Topics) > 0 {
+				if sc.allEvent.CheckEqual(sc.allEvent.CanQuote, oneLog.Topics[0]) {
 					// Check whether the order is a valid order
 					// put in canBid chan
-					contract_addr := one_log.Address
-					call_data := util.GenerateOrderCall(contract_addr)
-					param := make([]interface{}, 0, 20)
-					param = append(param, trx_simple_data.Hash)
-					call_res := link_client.EthCall(util.GetOrderFactory(self.Config), call_data)
-					orderId := util.GetBigInt(call_res, 16)
+					log.Printf("find CanQuote event %v", oneLog)
+					contractAddr := oneLog.Address
+					callData := util.GenerateOrderCall(contractAddr)
 
-					if orderId.Int64() > 0 {
-						var order_base util.Order
+					callRes := linkClient.EthCall(util.GetOrderFactory(sc.Config), callData)
+					orderID := util.GetBigInt(callRes, 16)
+
+					if orderID.Int64() > 0 {
+						var orderBaseO util.Order
 						for {
-							conn, err := ethclient.Dial(self.Config.NodeUrl)
+							conn, err := ethclient.Dial(sc.Config.NodeURL)
 							if err != nil {
 								log.Printf("Failed to connect to the Ethereum client %v", err)
 							} else {
 								defer conn.Close()
-								orderBase, err := util.NewOrderBase(common.HexToAddress(contract_addr), conn)
+								orderBase, err := util.NewOrderBase(common.HexToAddress(contractAddr), conn)
 								if err != nil {
-									log.Printf("call orderBase failed")
+									log.Printf("call orderBase failed %v", err)
 									continue
 								}
-								order_base, err = orderBase.OrderInfo(nil)
+								orderBaseO, err = orderBase.OrderInfo(nil)
 								if err != nil {
-									log.Printf("call orderBase failed")
+									log.Printf("call orderBase failed %v", err)
 									continue
 								}
 								break
@@ -360,56 +364,55 @@ func (self *Scan) handle_transaction(link_client *util.LinkClient, trx_data *int
 							time.Sleep(5 * time.Second)
 						}
 						NeedBidObj := new(util.NeedBid)
-						NeedBidObj.Cpu = order_base.VCpu
-						NeedBidObj.Cert = order_base.CertKey
-						NeedBidObj.Memory = order_base.VMemory
-						NeedBidObj.Storage = order_base.VStorage
-						NeedBidObj.SdlTrxId = order_base.TrxId.Text(16)
-						NeedBidObj.ContractAddress = contract_addr
-						NeedBidObj.State = order_base.State
-						self.NeedBidChan <- *NeedBidObj
+						NeedBidObj.CPU = orderBaseO.VCpu
+						NeedBidObj.Cert = orderBaseO.CertKey
+						NeedBidObj.Memory = orderBaseO.VMemory
+						NeedBidObj.Storage = orderBaseO.VStorage
+						NeedBidObj.SdlTrxID = orderBaseO.TrxId.Text(16)
+						NeedBidObj.ContractAddress = contractAddr
+						NeedBidObj.State = orderBaseO.State
+						sc.NeedBidChan <- *NeedBidObj
+						log.Printf("insert  CanQuote obj %v", *NeedBidObj)
 					}
 
-				} else if self.allEvent.CheckEqual(self.allEvent.ChooseQuote, one_log.Topics[0]) {
+				} else if sc.allEvent.CheckEqual(sc.allEvent.ChooseQuote, oneLog.Topics[0]) {
 					// Check whether the order is a valid order
 					// put in canBid chan
-					contract_addr := one_log.Address
-					call_data := util.GenerateOrderCall(contract_addr)
-					param := make([]interface{}, 0, 20)
-					param = append(param, trx_simple_data.Hash)
-					call_res := link_client.EthCall(util.GetOrderFactory(self.Config), call_data)
-					orderId := util.GetBigInt(call_res, 16)
+					log.Printf("find ChooseQuote event %v", oneLog)
+					contractAddr := oneLog.Address
+					callData := util.GenerateOrderCall(contractAddr)
 
-					if orderId.Int64() > 0 {
-						OrderBaseFilter, _ := util.NewOrderBaseFilterer(common.HexToAddress(contract_addr), nil)
-
-						CanQuoteEvent, err := OrderBaseFilter.ParseChooseQuote(util.ConvertLogToGethLogs(one_log))
+					callRes := linkClient.EthCall(util.GetOrderFactory(sc.Config), callData)
+					orderID := util.GetBigInt(callRes, 16)
+					if orderID.Int64() > 0 {
+						OrderBaseFilter, _ := util.NewOrderBaseFilterer(common.HexToAddress(contractAddr), nil)
+						CanQuoteEvent, err := OrderBaseFilter.ParseChooseQuote(util.ConvertLogToGethLogs(oneLog))
 						if err == nil {
 							needCreate := new(util.NeedCreate)
-							needCreate.CpuPrice = CanQuoteEvent.Price.CpuPrice
-							needCreate.MemoryPrice = CanQuoteEvent.Price.MemoryPrice
-							needCreate.StoragePrice = CanQuoteEvent.Price.StoragePrice
-							needCreate.Provider = CanQuoteEvent.Price.Provider
+
+							needCreate.Provider = CanQuoteEvent.Provider
 							needCreate.FinalPrice = CanQuoteEvent.FinalPrice
-							needCreate.ContractAddress = contract_addr
-							self.NeedCreateChan <- *needCreate
+							needCreate.ContractAddress = contractAddr
+							sc.NeedCreateChan <- *needCreate
+							log.Printf("insert NeedCreateChan event %v", *needCreate)
 						}
 					}
 
-				} else if self.allEvent.CheckEqual(self.allEvent.UserCancelOrder, one_log.Topics[0]) {
+				} else if sc.allEvent.CheckEqual(sc.allEvent.UserCancelOrder, oneLog.Topics[0]) {
 					// Check whether the order is a valid order
 					// put in canBid chan
-					contract_addr := one_log.Address
-					call_data := util.GenerateOrderCall(contract_addr)
-					param := make([]interface{}, 0, 20)
-					param = append(param, trx_simple_data.Hash)
-					call_res := link_client.EthCall(util.GetOrderFactory(self.Config), call_data)
-					orderId := util.GetBigInt(call_res, 16)
+					log.Printf("find UserCancelOrder event %v", oneLog)
+					contractAddr := oneLog.Address
+					callData := util.GenerateOrderCall(contractAddr)
 
-					if orderId.Int64() > 0 {
+					callRes := linkClient.EthCall(util.GetOrderFactory(sc.Config), callData)
+					orderID := util.GetBigInt(callRes, 16)
+
+					if orderID.Int64() > 0 {
 						userCancel := new(util.UserCancelOrder)
-						userCancel.ContractAddress = common.HexToAddress(contract_addr)
-						self.UserCancelChan <- *userCancel
+						userCancel.ContractAddress = common.HexToAddress(contractAddr)
+						sc.UserCancelChan <- *userCancel
+						log.Printf("insert UserCancelOrder event %v", *userCancel)
 					}
 
 				}
@@ -419,8 +422,8 @@ func (self *Scan) handle_transaction(link_client *util.LinkClient, trx_data *int
 		}
 		//trace log
 
-		trace_param := make([]interface{}, 0, 2)
-		trace_param = append(trace_param, trx_simple_data.Hash)
+		traceParam := make([]interface{}, 0, 2)
+		traceParam = append(traceParam, trxSimpleData.Hash)
 
 	}
 

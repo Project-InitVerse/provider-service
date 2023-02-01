@@ -1,5 +1,6 @@
 package v1
 
+//LeaseIDHostnameConnection is interFace
 type LeaseIDHostnameConnection interface {
 	GetLeaseID() LeaseID
 	GetHostname() string
@@ -7,19 +8,25 @@ type LeaseIDHostnameConnection interface {
 	GetServiceName() string
 }
 
+//ActiveHostname is struct
 type ActiveHostname struct {
 	ID       LeaseID
 	Hostname string
 }
 
+//ProviderResourceEvent is string
 type ProviderResourceEvent string
 
 const (
-	ProviderResourceAdd    = ProviderResourceEvent("add")
+	//ProviderResourceAdd is add event string
+	ProviderResourceAdd = ProviderResourceEvent("add")
+	//ProviderResourceUpdate is update event string
 	ProviderResourceUpdate = ProviderResourceEvent("update")
+	//ProviderResourceDelete is delete event string
 	ProviderResourceDelete = ProviderResourceEvent("delete")
 )
 
+//HostnameResourceEvent is interFace
 type HostnameResourceEvent interface {
 	GetLeaseID() LeaseID
 	GetEventType() ProviderResourceEvent

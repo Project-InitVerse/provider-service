@@ -9,10 +9,11 @@ import (
 	"log"
 )
 
+// ProviderConfig is config struct
 type ProviderConfig struct {
-	NodeUrl                          string
-	NodeChainId                      string
-	CpuPrice                         string
+	NodeURL                          string
+	NodeChainID                      string
+	CPUPrice                         string
 	MemoryPrice                      string
 	StoragePrice                     string
 	SecretKey                        string
@@ -22,6 +23,7 @@ type ProviderConfig struct {
 	BidTimeOut                       int64
 	NameSpace                        string
 	K8sConfigPath                    string
+	HostNameServiceListenAddr        string
 	Cert                             string
 	GatewayListenAddress             string
 	ProviderAddress                  string
@@ -36,8 +38,12 @@ type ProviderConfig struct {
 	OvercommitPercentStorage         float64
 	DeploymentRuntimeClass           string
 	DockerImagePullSecretsName       string
+	HostPruneInterval                int
+	HostWebRefreshInterval           int
+	HostRetryDelay                   int
 }
 
+// LoadConfig get config from config.json
 func LoadConfig(c *viper.Viper) *ProviderConfig {
 	//c = viper.New()
 	//fmt.Println("c1",c)
@@ -49,11 +55,12 @@ func LoadConfig(c *viper.Viper) *ProviderConfig {
 		fmt.Println(err.Error())
 		return nil
 	}
-	log.Printf("load config success", c.GetString("OrderFactory"))
+	log.Println("load config success", c.GetString("OrderFactory"))
 
 	return ConvertConfig(c)
 }
 
+// WatchConfig is function watching config change
 func WatchConfig(c *viper.Viper) error {
 	if err := LoadConfig(c); err == nil {
 		return errors.New("unable load config")
@@ -68,21 +75,24 @@ func WatchConfig(c *viper.Viper) error {
 	<-ctx.Done()
 	return nil
 }
+
+// ConvertConfig is convent config function
 func ConvertConfig(c *viper.Viper) *ProviderConfig {
 	pConfig := ProviderConfig{}
 	fmt.Println(c.GetString("OrderFactory"))
 	if err := c.Unmarshal(&pConfig); err != nil {
-		log.Printf("convertConfig error", err.Error())
+		log.Println("convertConfig error", err.Error())
 		return nil
 	}
 	return &pConfig
 }
 
+// ConvertConfigPtr is convent config struct function
 func ConvertConfigPtr(c *viper.Viper, pConfig *ProviderConfig) error {
 	//pConfig := ProviderConfig{}
 	//fmt.Println(c.GetString("OrderFactory"))
 	if err := c.Unmarshal(pConfig); err != nil {
-		log.Printf("convertConfig error", err.Error())
+		log.Println("convertConfig error", err.Error())
 		return err
 	}
 	return nil

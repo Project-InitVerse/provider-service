@@ -26,6 +26,7 @@ type Status struct {
 	Inventory InventoryStatus `json:"inventory"`
 }
 
+// InventoryMetricTotal stores inventory resource
 type InventoryMetricTotal struct {
 	CPU              uint64           `json:"cpu"`
 	Memory           uint64           `json:"memory"`
@@ -33,6 +34,7 @@ type InventoryMetricTotal struct {
 	Storage          map[string]int64 `json:"storage,omitempty"`
 }
 
+// InventoryStorageStatus stores inventory state
 type InventoryStorageStatus struct {
 	Class string `json:"class"`
 	Size  int64  `json:"size"`
@@ -49,12 +51,14 @@ type InventoryStatus struct {
 	Error error `json:"error,omitempty"`
 }
 
+// InventoryNodeMetric stores inventory node status
 type InventoryNodeMetric struct {
 	CPU              uint64 `json:"cpu"`
 	Memory           uint64 `json:"memory"`
 	StorageEphemeral uint64 `json:"storage_ephemeral"`
 }
 
+// AddResources is function add inventory resource
 func (inv *InventoryMetricTotal) AddResources(res types.Resources) {
 	cpu := sdk.NewIntFromUint64(inv.CPU)
 	mem := sdk.NewIntFromUint64(inv.Memory)
@@ -83,12 +87,14 @@ func (inv *InventoryMetricTotal) AddResources(res types.Resources) {
 	inv.StorageEphemeral = ephemeralStorage.Uint64()
 }
 
+// InventoryNode is struct
 type InventoryNode struct {
 	Name        string              `json:"name"`
 	Allocatable InventoryNodeMetric `json:"allocatable"`
 	Available   InventoryNodeMetric `json:"available"`
 }
 
+// InventoryMetrics is struct
 type InventoryMetrics struct {
 	Nodes            []InventoryNode      `json:"nodes"`
 	TotalAllocatable InventoryMetricTotal `json:"total_allocatable"`
@@ -109,6 +115,7 @@ type ServiceStatus struct {
 	AvailableReplicas  int32 `json:"available_replicas"`
 }
 
+// ForwardedPortStatus is struct
 type ForwardedPortStatus struct {
 	Host         string                   `json:"host,omitempty"`
 	Port         uint16                   `json:"port"`
@@ -123,6 +130,7 @@ type LeaseStatus struct {
 	ForwardedPorts map[string][]ForwardedPortStatus `json:"forwarded_ports"` // Container services that are externally accessible
 }
 
+// Inventory is interFace
 type Inventory interface {
 	Adjust(Reservation) error
 	Metrics() InventoryMetrics
@@ -141,12 +149,14 @@ type ServiceLog struct {
 	Scanner *bufio.Scanner
 }
 
+// LeaseEventObject stores event param
 type LeaseEventObject struct {
 	Kind      string `json:"kind" yaml:"kind"`
 	Namespace string `json:"namespace" yaml:"namespace"`
 	Name      string `json:"name" yaml:"name"`
 }
 
+// LeaseEvent is struct
 type LeaseEvent struct {
 	Type                string           `json:"type" yaml:"type"`
 	ReportingController string           `json:"reportingController,omitempty" yaml:"reportingController"`
@@ -156,6 +166,7 @@ type LeaseEvent struct {
 	Object              LeaseEventObject `json:"object" yaml:"object"`
 }
 
+// EventsWatcher is interface
 type EventsWatcher interface {
 	Shutdown()
 	Done() <-chan struct{}
@@ -169,8 +180,10 @@ type eventsFeed struct {
 	feed   chan *eventsv1.Event
 }
 
+// EventsWatcher is struct of eventsFeed
 var _ EventsWatcher = (*eventsFeed)(nil)
 
+// NewEventsFeed is function create eventsFeed
 func NewEventsFeed(ctx context.Context) EventsWatcher {
 	ctx, cancel := context.WithCancel(ctx)
 	return &eventsFeed{
@@ -180,14 +193,17 @@ func NewEventsFeed(ctx context.Context) EventsWatcher {
 	}
 }
 
+// Shutdown is function shutdown eventsFeed
 func (e *eventsFeed) Shutdown() {
 	e.cancel()
 }
 
+// Done is function
 func (e *eventsFeed) Done() <-chan struct{} {
 	return e.ctx.Done()
 }
 
+// SendEvent is function
 func (e *eventsFeed) SendEvent(evt *eventsv1.Event) bool {
 	select {
 	case e.feed <- evt:
@@ -197,10 +213,12 @@ func (e *eventsFeed) SendEvent(evt *eventsv1.Event) bool {
 	}
 }
 
+// ResultChan is function
 func (e *eventsFeed) ResultChan() <-chan *eventsv1.Event {
 	return e.feed
 }
 
+// ExecResult is interface
 type ExecResult interface {
 	ExitCode() int
 }

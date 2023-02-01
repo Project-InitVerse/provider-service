@@ -29,6 +29,8 @@ const (
 func (c *client) GetDeclaredIPs(ctx context.Context, leaseID ctypes.LeaseID) ([]ubictypes.ProviderLeasedIPSpec, error) {
 	labelSelector := &strings.Builder{}
 	kubeSelectorForLease(labelSelector, leaseID)
+	fmt.Println(labelSelector.String())
+	fmt.Println(c.ns)
 	results, err := c.ac.UbicnetV1().ProviderLeasedIPs(c.ns).List(ctx, metav1.ListOptions{
 		LabelSelector: labelSelector.String(),
 	})
@@ -50,7 +52,7 @@ func (c *client) PurgeDeclaredIP(ctx context.Context, leaseID ctypes.LeaseID, se
 	_, _ = fmt.Fprintf(labelSelector, ",%s=%s", protoLabel, proto.ToString())
 	_, _ = fmt.Fprintf(labelSelector, ",%s=%d", externalPortLabel, externalPort)
 	return c.ac.UbicnetV1().ProviderLeasedIPs(c.ns).DeleteCollection(ctx, metav1.DeleteOptions{}, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=true", builder.AkashManagedLabelName),
+		LabelSelector: fmt.Sprintf("%s=true", builder.UbicManagedLabelName),
 	})
 }
 
@@ -74,10 +76,10 @@ func (c *client) DeclareIP(ctx context.Context, lID ctypes.LeaseID, serviceName 
 	}
 
 	labels := map[string]string{
-		builder.AkashManagedLabelName: "true",
-		serviceNameLabel:              serviceName,
-		externalPortLabel:             fmt.Sprintf("%d", externalPort),
-		protoLabel:                    proto.ToString(),
+		builder.UbicManagedLabelName: "true",
+		serviceNameLabel:             serviceName,
+		externalPortLabel:            fmt.Sprintf("%d", externalPort),
+		protoLabel:                   proto.ToString(),
 	}
 	builder.AppendLeaseLabels(lID, labels)
 
@@ -116,7 +118,7 @@ func (c *client) DeclareIP(ctx context.Context, lID ctypes.LeaseID, serviceName 
 
 func (c *client) PurgeDeclaredIPs(ctx context.Context, lID ctypes.LeaseID) error {
 	labelSelector := &strings.Builder{}
-	_, err := fmt.Fprintf(labelSelector, "%s=true,", builder.AkashManagedLabelName)
+	_, err := fmt.Fprintf(labelSelector, "%s=true,", builder.UbicManagedLabelName)
 	if err != nil {
 		return err
 	}

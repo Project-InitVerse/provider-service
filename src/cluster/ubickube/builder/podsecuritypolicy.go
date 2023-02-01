@@ -9,6 +9,7 @@ import (
 	manitypes "github.com/ovrclk/akash/manifest/v2beta1"
 )
 
+// PspRestricted is interface
 type PspRestricted interface {
 	builderBase
 	Name() string
@@ -20,6 +21,7 @@ type pspRestricted struct {
 	builder
 }
 
+// BuildPSP is fucntion build pop security policy
 func BuildPSP(settings Settings, lid ctypes.LeaseID, group *manitypes.Group) PspRestricted { // nolint:golint,unparam
 	return &pspRestricted{builder: builder{settings: settings, lid: lid, group: group}}
 }

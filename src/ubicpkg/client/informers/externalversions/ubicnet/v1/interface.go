@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "ubicpkg/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "providerService/src/ubicpkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

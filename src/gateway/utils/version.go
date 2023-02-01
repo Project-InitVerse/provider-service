@@ -4,7 +4,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/version"
 )
 
-type AkashVersionInfo struct {
+//UbicVersionInfo is struct
+type UbicVersionInfo struct {
 	Version          string `json:"version"`
 	GitCommit        string `json:"commit"`
 	BuildTags        string `json:"buildTags"`
@@ -12,9 +13,10 @@ type AkashVersionInfo struct {
 	CosmosSdkVersion string `json:"cosmosSdkVersion"`
 }
 
-func NewAkashVersionInfo() AkashVersionInfo {
+//NewUbicVersionInfo create UbicVersionInfo
+func NewUbicVersionInfo() UbicVersionInfo {
 	verInfo := version.NewInfo()
-	return AkashVersionInfo{
+	return UbicVersionInfo{
 		Version:          verInfo.Version,
 		GitCommit:        verInfo.GitCommit,
 		BuildTags:        verInfo.BuildTags,

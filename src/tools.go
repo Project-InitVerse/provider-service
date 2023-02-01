@@ -1,7 +1,7 @@
-//go:build tools
-// +build tools
+//go:build provider
+// +build provider
 
-package tools
+package provider
 
 // nolint
 import (

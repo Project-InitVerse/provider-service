@@ -1,9 +1,9 @@
 package cluster
 
 import (
-	ctypes "providerService/src/cluster/types/v1beta2"
+	ctypes "providerService/src/cluster/types/v1"
 
-	"providerService/src/cluster/util"
+	util "providerService/src/cluster/ubicutil"
 
 	atypes "github.com/ovrclk/akash/types/v1beta2"
 	mtypes "github.com/ovrclk/akash/x/market/types/v1beta2"

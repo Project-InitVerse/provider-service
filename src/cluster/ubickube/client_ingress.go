@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	akashIngressClassName = "akash-ingress-class"
+	akashIngressClassName = "ubic-ingress-class"
 )
 
 func kubeNginxIngressAnnotations(directive ctypes.ConnectHostnameToDeploymentDirective) map[string]string {
@@ -74,12 +74,11 @@ func (c *client) ConnectHostnameToDeployment(ctx context.Context, directive ctyp
 	ingressName := directive.Hostname
 	ns := builder.LidNS(directive.LeaseID)
 	rules := ingressRules(directive.Hostname, directive.ServiceName, directive.ServicePort)
-
 	foundEntry, err := c.kc.NetworkingV1().Ingresses(ns).Get(ctx, ingressName, metav1.GetOptions{})
 	metricsutils.IncCounterVecWithLabelValuesFiltered(kubeCallsCounter, "ingresses-get", err, kubeErrors.IsNotFound)
 
 	labels := make(map[string]string)
-	labels[builder.AkashManagedLabelName] = "true"
+	labels[builder.UbicManagedLabelName] = "true"
 	builder.AppendLeaseLabels(directive.LeaseID, labels)
 
 	ingressClassName := akashIngressClassName
@@ -191,7 +190,7 @@ func (c *client) GetHostnameDeploymentConnections(ctx context.Context) ([]ctypes
 
 	results := make([]ctypes.LeaseIDHostnameConnection, 0)
 	err := ingressPager.EachListItem(ctx,
-		metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=true", builder.AkashManagedLabelName)},
+		metav1.ListOptions{LabelSelector: fmt.Sprintf("%s=true", builder.UbicManagedLabelName)},
 		func(obj runtime.Object) error {
 
 			ingress := obj.(*netv1.Ingress)

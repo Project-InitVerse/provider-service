@@ -1,4 +1,4 @@
-package ubicUtil
+package ubicutil
 
 import (
 	"context"

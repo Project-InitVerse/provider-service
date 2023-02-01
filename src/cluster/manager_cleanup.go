@@ -3,8 +3,8 @@ package cluster
 import (
 	"context"
 	"github.com/ovrclk/akash/manifest/v2beta1"
-	mtypes "github.com/ovrclk/akash/x/market/types/v1beta2"
 	logger "github.com/tendermint/tendermint/libs/log"
+	ctypes "providerService/src/cluster/types/v1"
 )
 
 type purgeIPEntry struct {
@@ -14,15 +14,15 @@ type purgeIPEntry struct {
 }
 
 type deployCleanupHelper struct {
-	client Client
+	client UbicClient
 	log    logger.Logger
-	lease  mtypes.LeaseID
+	lease  ctypes.LeaseID
 
 	hostnamesToPurge []string
 	ipsToPurge       []purgeIPEntry
 }
 
-func newDeployCleanupHelper(lease mtypes.LeaseID, client Client, log logger.Logger) *deployCleanupHelper {
+func newDeployCleanupHelper(lease ctypes.LeaseID, client UbicClient, log logger.Logger) *deployCleanupHelper {
 	return &deployCleanupHelper{
 		client: client,
 		log:    log,

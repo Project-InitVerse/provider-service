@@ -36,18 +36,20 @@ type ubicSimpleHostnames struct {
 	Hostnames map[string]ubicHostnameID
 	lock      sync.Mutex
 } /* Used in test code */
-
+// NewUbicSimpleHostnames create function
 func NewUbicSimpleHostnames() clustertypes.HostnameServiceClient {
 	return &ubicSimpleHostnames{
 		Hostnames: make(map[string]ubicHostnameID),
 	}
 }
 
+//UbicReservationResult is struct
 type UbicReservationResult struct {
 	ChErr               <-chan error
 	ChWithheldHostnames <-chan []string
 }
 
+//Wait is UbicReservationResult function
 func (rr UbicReservationResult) Wait(wait <-chan struct{}) ([]string, error) {
 	select {
 	case err := <-rr.ChErr:
@@ -86,7 +88,7 @@ func prepareUbicHostnamesImpl(store map[string]ubicHostnameID, hostnames []strin
 			if existingID.owner.String() == hID.owner.String() {
 				toChange = append(toChange, hostname)
 			} else {
-				errCh <- fmt.Errorf("%w: host %q in use", UbicErrHostnameNotAllowed, hostname)
+				errCh <- fmt.Errorf("%w: host %q in use", ErrUbicHostnameNotAllowed, hostname)
 				return
 			}
 		}
@@ -135,7 +137,7 @@ func reserveUbicHostnamesImpl(store map[string]ubicHostnameID, hostnames []strin
 			// Check to see if the same address already is using this hostname
 			if existingID.owner.String() != hID.owner.String() {
 				// The owner is not the same, this can't be done
-				ch <- fmt.Errorf("%w: host %q in use", UbicErrHostnameNotAllowed, hostname)
+				ch <- fmt.Errorf("%w: host %q in use", ErrUbicHostnameNotAllowed, hostname)
 				return
 			}
 
@@ -195,7 +197,7 @@ func canUbicReserveHostnamesImpl(store map[string]ubicHostnameID, hostnames []st
 
 		if inUse {
 			if existingID.owner.String() != ownerAddr.String() {
-				chErr <- fmt.Errorf("%w: host %q in use", UbicErrHostnameNotAllowed, hostname)
+				chErr <- fmt.Errorf("%w: host %q in use", ErrUbicHostnameNotAllowed, hostname)
 				return
 			}
 		}
@@ -249,6 +251,7 @@ type ubicPrepareTransferRequest struct {
 	chErr     chan<- error
 }
 
+// UbicHostnameService is struct
 type UbicHostnameService struct {
 	inUse map[string]ubicHostnameID
 
@@ -262,8 +265,10 @@ type UbicHostnameService struct {
 	blockedDomains   []string
 }
 
+// UbicHostnameSeparator Define
 const UbicHostnameSeparator = '.'
 
+// NewUbicHostnameService create ubic hostname service
 func NewUbicHostnameService(ctx context.Context, cfg Config, initialData map[string]clustertypes.LeaseID) (*UbicHostnameService, error) {
 	blockedHostnames := make([]string, 0)
 	blockedDomains := make([]string, 0)
@@ -325,8 +330,10 @@ loop:
 
 }
 
-var UbicErrHostnameNotAllowed = errors.New("hostname not allowed")
+// ErrUbicHostnameNotAllowed define
+var ErrUbicHostnameNotAllowed = errors.New("hostname not allowed")
 
+// PrepareHostnamesForTransfer is UbicHostnameService function
 func (hs *UbicHostnameService) PrepareHostnamesForTransfer(ctx context.Context, hostnames []string, leaseID clustertypes.LeaseID) error {
 	chErr := make(chan error, 1)
 
@@ -361,19 +368,20 @@ func (hs *UbicHostnameService) PrepareHostnamesForTransfer(ctx context.Context, 
 func (hs *UbicHostnameService) isHostnameBlocked(hostname string) error {
 	for _, blockedHostname := range hs.blockedHostnames {
 		if blockedHostname == hostname {
-			return fmt.Errorf("%w: %q is blocked by this provider", UbicErrHostnameNotAllowed, hostname)
+			return fmt.Errorf("%w: %q is blocked by this provider", ErrUbicHostnameNotAllowed, hostname)
 		}
 	}
 
 	for _, blockedDomain := range hs.blockedDomains {
 		if strings.HasSuffix(hostname, blockedDomain) {
-			return fmt.Errorf("%w: domain %q is blocked by this provider", UbicErrHostnameNotAllowed, hostname)
+			return fmt.Errorf("%w: domain %q is blocked by this provider", ErrUbicHostnameNotAllowed, hostname)
 		}
 	}
 
 	return nil
 }
 
+// ReserveHostnames is UbicHostnameService function
 func (hs *UbicHostnameService) ReserveHostnames(ctx context.Context, hostnames []string, leaseID clustertypes.LeaseID) ([]string, error) {
 	lowercaseHostnames := make([]string, len(hostnames))
 	for i, hostname := range hostnames {
@@ -425,6 +433,7 @@ func (hs *UbicHostnameService) ReserveHostnames(ctx context.Context, hostnames [
 	}
 }
 
+// ReleaseHostnames is UbicHostnameService function
 func (hs *UbicHostnameService) ReleaseHostnames(leaseID clustertypes.LeaseID) error {
 	hID, err := ubicHostnameIDFromLeaseID(leaseID)
 	if err != nil {
@@ -438,6 +447,7 @@ func (hs *UbicHostnameService) ReleaseHostnames(leaseID clustertypes.LeaseID) er
 	return nil
 }
 
+// CanReserveHostnames is UbicHostnameService function
 func (hs *UbicHostnameService) CanReserveHostnames(hostnames []string, ownerAddr common.Address) error {
 	returnValue := make(chan error, 1) // Buffer of one so service does not block
 	lowercaseHostnames := make([]string, len(hostnames))

@@ -33,21 +33,22 @@ import (
 	ubictypes "providerService/src/ubicpkg/api/ubicnet/v1"
 )
 
+// Errors types returned by the Exec function on the client interface
 var (
-	// Errors types returned by the Exec function on the client interface
-	UbicErrExec                        = errors.New("remote command execute error")
-	UbicErrExecNoServiceWithName       = fmt.Errorf("%w: no such service exists with that name", UbicErrExec)
-	UbicErrExecServiceNotRunning       = fmt.Errorf("%w: service with that name is not running", UbicErrExec)
-	UbicErrExecCommandExecutionFailed  = fmt.Errorf("%w: command execution failed", UbicErrExec)
-	UbicErrExecCommandDoesNotExist     = fmt.Errorf("%w: command could not be executed because it does not exist", UbicErrExec)
-	UbicErrExecDeploymentNotYetRunning = fmt.Errorf("%w: deployment is not yet active", UbicErrExec)
-	UbicErrExecPodIndexOutOfRange      = fmt.Errorf("%w: pod index out of range", UbicErrExec)
-	UbicErrUnknownStorageClass         = errors.New("inventory: unknown storage class")
-	ubicErrNotImplemented              = errors.New("not implemented")
+	ErrUbicExec                        = errors.New("remote command execute error")
+	ErrUbicExecNoServiceWithName       = fmt.Errorf("%w: no such service exists with that name", ErrUbicExec)
+	ErrUbicExecServiceNotRunning       = fmt.Errorf("%w: service with that name is not running", ErrUbicExec)
+	ErrUbicExecCommandExecutionFailed  = fmt.Errorf("%w: command execution failed", ErrUbicExec)
+	ErrUbicExecCommandDoesNotExist     = fmt.Errorf("%w: command could not be executed because it does not exist", ErrUbicExec)
+	ErrUbicExecDeploymentNotYetRunning = fmt.Errorf("%w: deployment is not yet active", ErrUbicExec)
+	ErrUbicExecPodIndexOutOfRange      = fmt.Errorf("%w: pod index out of range", ErrUbicExec)
+	ErrUbicUnknownStorageClass         = errors.New("inventory: unknown storage class")
+	errUbicNotImplemented              = errors.New("not implemented")
 )
 
 var _ UbicClient = (*nullUbicClient)(nil)
 
+// UbicReadClient is interface to get k8s info
 type UbicReadClient interface {
 	LeaseStatus(context.Context, ctypes.LeaseID) (map[string]*ctypes.ServiceStatus, error)
 	ForwardedPortStatus(context.Context, ctypes.LeaseID) (map[string][]ctypes.ForwardedPortStatus, error)
@@ -65,7 +66,7 @@ type UbicReadClient interface {
 	GetDeclaredIPs(ctx context.Context, leaseID ctypes.LeaseID) ([]ubictypes.ProviderLeasedIPSpec, error)
 }
 
-// Client interface lease and deployment methods
+// UbicClient interface lease and deployment methods
 type UbicClient interface {
 	UbicReadClient
 	Deploy(ctx context.Context, lID ctypes.LeaseID, mgroup *manifest.Group) error
@@ -103,8 +104,9 @@ type UbicClient interface {
 	PurgeDeclaredIPs(ctx context.Context, lID ctypes.LeaseID) error
 }
 
+// UbicErrorIsOkToSendToClient is function
 func UbicErrorIsOkToSendToClient(err error) bool {
-	return errors.Is(err, UbicErrExec)
+	return errors.Is(err, ErrUbicExec)
 }
 
 type ubicResourcePair struct {
@@ -364,7 +366,7 @@ type nullUbicClient struct {
 	mtx    sync.Mutex
 }
 
-// NewServiceLog creates and returns a service log with provided details
+// NewUbicServiceLog creates and returns a service log with provided details
 func NewUbicServiceLog(name string, stream io.ReadCloser) *ctypes.ServiceLog {
 	return &ctypes.ServiceLog{
 		Name:    name,
@@ -373,7 +375,7 @@ func NewUbicServiceLog(name string, stream io.ReadCloser) *ctypes.ServiceLog {
 	}
 }
 
-// NullClient returns nullClient instance
+// NullUbicClient returns nullClient instance
 func NullUbicClient() UbicClient {
 	return &nullUbicClient{
 		leases: make(map[string]*nullUbicLease),
@@ -382,36 +384,36 @@ func NullUbicClient() UbicClient {
 }
 
 func (c *nullUbicClient) RemoveHostnameFromDeployment(ctx context.Context, hostname string, leaseID ctypes.LeaseID, allowMissing bool) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) ObserveHostnameState(ctx context.Context) (<-chan ctypes.HostnameResourceEvent, error) {
-	return nil, ubicErrNotImplemented
+	return nil, errUbicNotImplemented
 }
 func (c *nullUbicClient) GetDeployments(ctx context.Context, dID dtypes.DeploymentID) ([]ctypes.Deployment, error) {
-	return nil, ubicErrNotImplemented
+	return nil, errUbicNotImplemented
 }
 func (c *nullUbicClient) GetHostnameDeploymentConnections(ctx context.Context) ([]ctypes.LeaseIDHostnameConnection, error) {
-	return nil, ubicErrNotImplemented
+	return nil, errUbicNotImplemented
 }
 
 // Connect a given hostname to a deployment
 func (c *nullUbicClient) ConnectHostnameToDeployment(ctx context.Context, directive ctypes.ConnectHostnameToDeploymentDirective) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 // Declare that a given deployment should be connected to a given hostname
 func (c *nullUbicClient) DeclareHostname(ctx context.Context, lID ctypes.LeaseID, host string, serviceName string, externalPort uint32) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 // Purge any hostnames associated with a given deployment
 func (c *nullUbicClient) PurgeDeclaredHostnames(ctx context.Context, lID ctypes.LeaseID) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) PurgeDeclaredHostname(ctx context.Context, lID ctypes.LeaseID, hostname string) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) Deploy(ctx context.Context, lid ctypes.LeaseID, mgroup *manifest.Group) error {
@@ -429,7 +431,7 @@ func (c *nullUbicClient) Deploy(ctx context.Context, lid ctypes.LeaseID, mgroup 
 }
 
 func (*nullUbicClient) ForwardedPortStatus(context.Context, ctypes.LeaseID) (map[string][]ctypes.ForwardedPortStatus, error) {
-	return nil, ubicErrNotImplemented
+	return nil, errUbicNotImplemented
 }
 
 func (c *nullUbicClient) LeaseStatus(_ context.Context, lid ctypes.LeaseID) (map[string]*ctypes.ServiceStatus, error) {
@@ -572,7 +574,7 @@ func (c *nullUbicClient) Inventory(context.Context) (ctypes.Inventory, error) {
 }
 
 func (c *nullUbicClient) Exec(context.Context, ctypes.LeaseID, string, uint, []string, io.Reader, io.Writer, io.Writer, bool, remotecommand.TerminalSizeQueue) (ctypes.ExecResult, error) {
-	return nil, ubicErrNotImplemented
+	return nil, errUbicNotImplemented
 }
 
 func (c *nullUbicClient) GetManifestGroup(context.Context, ctypes.LeaseID) (bool, crd.ManifestGroup, error) {
@@ -588,29 +590,29 @@ func (c *nullUbicClient) KubeVersion() (*version.Info, error) {
 }
 
 func (c *nullUbicClient) DeclareIP(ctx context.Context, lID ctypes.LeaseID, serviceName string, port uint32, externalPort uint32, proto manifest.ServiceProtocol, sharingKey string, overwrite bool) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) PurgeDeclaredIPs(ctx context.Context, lID ctypes.LeaseID) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) ObserveIPState(ctx context.Context) (<-chan ctypes.IPResourceEvent, error) {
-	return nil, ubicErrNotImplemented
+	return nil, errUbicNotImplemented
 }
 
 func (c *nullUbicClient) CreateIPPassthrough(ctx context.Context, lID ctypes.LeaseID, directive ctypes.ClusterIPPassthroughDirective) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) PurgeIPPassthrough(ctx context.Context, lID ctypes.LeaseID, directive ctypes.ClusterIPPassthroughDirective) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) PurgeDeclaredIP(ctx context.Context, lID ctypes.LeaseID, serviceName string, externalPort uint32, proto manifest.ServiceProtocol) error {
-	return ubicErrNotImplemented
+	return errUbicNotImplemented
 }
 
 func (c *nullUbicClient) GetDeclaredIPs(ctx context.Context, leaseID ctypes.LeaseID) ([]ubictypes.ProviderLeasedIPSpec, error) {
-	return nil, ubicErrNotImplemented
+	return nil, errUbicNotImplemented
 }

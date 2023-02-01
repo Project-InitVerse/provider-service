@@ -22,16 +22,16 @@ func cleanupStaleResources(ctx context.Context, kc kubernetes.Interface, lid cty
 		svcnames = append(svcnames, svc.Name)
 	}
 
-	req1, err := labels.NewRequirement(builder.AkashManifestServiceLabelName, selection.NotIn, svcnames)
+	req1, err := labels.NewRequirement(builder.UbicManifestServiceLabelName, selection.NotIn, svcnames)
 	if err != nil {
 		return err
 	}
-	req2, err := labels.NewRequirement(builder.AkashServiceTarget, selection.Equals, []string{"true"})
+	req2, err := labels.NewRequirement(builder.UbicServiceTarget, selection.Equals, []string{"true"})
 	if err != nil {
 		return err
 	}
 
-	req3, err := labels.NewRequirement(builder.AkashManagedLabelName, selection.NotIn, []string{builder.AkashMetalLB})
+	req3, err := labels.NewRequirement(builder.UbicManagedLabelName, selection.NotIn, []string{builder.UbicMetalLB})
 	if err != nil {
 		return err
 	}

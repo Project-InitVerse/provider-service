@@ -11,7 +11,6 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	tmrpc "github.com/tendermint/tendermint/rpc/core/types"
 
-	"github.com/ovrclk/akash/client"
 	"github.com/ovrclk/akash/pubsub"
 	"github.com/ovrclk/akash/util/runner"
 	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
@@ -33,6 +32,7 @@ const (
 	respStateScheduledWithdraw
 )
 
+// BalanceCheckerConfig is struct
 type BalanceCheckerConfig struct {
 	WithdrawalPeriod        time.Duration
 	LeaseFundsCheckInterval time.Duration
@@ -61,43 +61,6 @@ type leaseCheckResponse struct {
 	checkAfter time.Duration
 	state      respState
 	err        error
-}
-
-func newBalanceChecker(ctx context.Context,
-	bqc btypes.QueryClient,
-	aqc client.QueryClient,
-	accAddr sdk.AccAddress,
-	clientSession session.Session,
-	bus pubsub.Bus,
-	cfg BalanceCheckerConfig) (*balanceChecker, error) {
-
-	bc := &balanceChecker{
-		ctx:     ctx,
-		session: clientSession,
-		log:     clientSession.Log().With("cmp", "balance-checker"),
-		bus:     bus,
-		lc:      lifecycle.New(),
-		ownAddr: accAddr,
-		bqc:     bqc,
-		aqc:     aqc,
-		leases:  make(map[mtypes.LeaseID]*leaseState),
-		cfg:     cfg,
-	}
-
-	startCh := make(chan error, 1)
-	go bc.lc.WatchContext(ctx)
-	go bc.run(startCh)
-
-	select {
-	case err := <-startCh:
-		if err != nil {
-			return nil, err
-		}
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	}
-
-	return bc, nil
 }
 
 func (bc *balanceChecker) runEscrowCheck(ctx context.Context, lid mtypes.LeaseID, scheduledWithdraw bool, res chan<- leaseCheckResponse) {

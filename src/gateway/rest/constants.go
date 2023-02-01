@@ -1,5 +1,6 @@
 package rest
 
+//Define Lease var
 const (
 	LeaseShellCodeStdout         = 100
 	LeaseShellCodeStderr         = 101

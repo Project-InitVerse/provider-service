@@ -13,7 +13,8 @@ type ubicPurgeIPEntry struct {
 	proto       v2beta1.ServiceProtocol
 }
 
-type ubicDeployCleanupHelper struct {
+// UbicDeployCleanupHelper is struct
+type UbicDeployCleanupHelper struct {
 	client UbicClient
 	log    logger.Logger
 	lease  ctypes.LeaseID
@@ -22,19 +23,20 @@ type ubicDeployCleanupHelper struct {
 	ipsToPurge       []ubicPurgeIPEntry
 }
 
-func NewUbicDeployCleanupHelper(lease ctypes.LeaseID, client UbicClient, log logger.Logger) *ubicDeployCleanupHelper {
-	return &ubicDeployCleanupHelper{
+// NewUbicDeployCleanupHelper create deploy clean object
+func NewUbicDeployCleanupHelper(lease ctypes.LeaseID, client UbicClient, log logger.Logger) *UbicDeployCleanupHelper {
+	return &UbicDeployCleanupHelper{
 		client: client,
 		log:    log,
 		lease:  lease,
 	}
 }
 
-func (dch *ubicDeployCleanupHelper) addHostname(hostname string) {
+func (dch *UbicDeployCleanupHelper) addHostname(hostname string) {
 	dch.hostnamesToPurge = append(dch.hostnamesToPurge, hostname)
 }
 
-func (dch *ubicDeployCleanupHelper) addIP(serviceName string, port uint32, proto v2beta1.ServiceProtocol) {
+func (dch *UbicDeployCleanupHelper) addIP(serviceName string, port uint32, proto v2beta1.ServiceProtocol) {
 	dch.ipsToPurge = append(
 		dch.ipsToPurge,
 		ubicPurgeIPEntry{
@@ -44,7 +46,7 @@ func (dch *ubicDeployCleanupHelper) addIP(serviceName string, port uint32, proto
 		})
 }
 
-func (dch *ubicDeployCleanupHelper) purgeAll(ctx context.Context) {
+func (dch *UbicDeployCleanupHelper) purgeAll(ctx context.Context) {
 	for _, hostname := range dch.hostnamesToPurge {
 		err := dch.client.PurgeDeclaredHostname(ctx, dch.lease, hostname)
 		if err != nil {

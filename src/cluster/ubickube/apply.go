@@ -164,7 +164,6 @@ func applyManifest(ctx context.Context, kc crdapi.Interface, b builder.Manifest)
 
 	switch {
 	case err == nil:
-		fmt.Println("applymanifest update")
 		// TODO - only run this update if it would change something
 		obj, err = b.Update(obj)
 		if err == nil {

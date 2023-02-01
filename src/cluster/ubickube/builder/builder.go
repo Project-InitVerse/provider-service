@@ -16,22 +16,21 @@ import (
 	clusterUtil "providerService/src/cluster/ubicutil"
 )
 
+// ubic kube const val
 const (
-	AkashManagedLabelName         = "ubic.net"
-	AkashManifestServiceLabelName = "ubic.net/manifest-service"
-	AkashNetworkStorageClasses    = "ubic.net/storageclasses"
-	AkashServiceTarget            = "ubic.net/service-target"
-	AkashMetalLB                  = "metal-lb"
+	UbicManagedLabelName         = "ubic.net"
+	UbicManifestServiceLabelName = "ubic.net/manifest-service"
+	UbicNetworkStorageClasses    = "ubic.net/storageclasses"
+	UbicServiceTarget            = "ubic.net/service-target"
+	UbicMetalLB                  = "metal-lb"
 
-	akashNetworkNamespace = "ubic.net/namespace"
+	ubicNetworkNamespace = "ubic.net/namespace"
 
-	AkashLeaseOwnerLabelName    = "ubic.net/lease.id.owner"
-	AkashLeaseDSeqLabelName     = "ubic.net/lease.id.dseq"
-	AkashLeaseGSeqLabelName     = "ubic.net/lease.id.gseq"
-	AkashLeaseOSeqLabelName     = "ubic.net/lease.id.oseq"
-	AkashLeaseProviderLabelName = "ubic.net/lease.id.provider"
-	AkashLeaseManifestVersion   = "ubic.net/manifest.version"
-	akashDeploymentPolicyName   = "akash-deployment-restrictions"
+	UbicLeaseOwnerLabelName    = "ubic.net/lease.id.owner"
+	UbicLeaseDSeqLabelName     = "ubic.net/lease.id.dseq"
+	UbicLeaseOSeqLabelName     = "ubic.net/lease.id.oseq"
+	UbicLeaseProviderLabelName = "ubic.net/lease.id.provider"
+	ubicDeploymentPolicyName   = "ubic-deployment-restrictions"
 )
 
 const runtimeClassNoneValue = "none"
@@ -76,8 +75,8 @@ func (b *builder) Name() string {
 
 func (b *builder) labels() map[string]string {
 	return map[string]string{
-		AkashManagedLabelName: "true",
-		akashNetworkNamespace: LidNS(b.lid),
+		UbicManagedLabelName: "true",
+		ubicNetworkNamespace: LidNS(b.lid),
 	}
 }
 
@@ -95,6 +94,7 @@ func addIfNotPresent(envVarsAlreadyAdded map[string]int, env []corev1.EnvVar, ke
 	return env
 }
 
+//SuffixForNodePortServiceName is string
 const SuffixForNodePortServiceName = "-np"
 
 func makeGlobalServiceNameFromBasename(basename string) string {
@@ -106,9 +106,10 @@ func LidNS(lid ctypes.LeaseID) string {
 	return clusterUtil.LeaseIDToNamespace(lid)
 }
 
+// AppendLeaseLabels is function to generate lables from lease
 func AppendLeaseLabels(lid ctypes.LeaseID, labels map[string]string) map[string]string {
-	labels[AkashLeaseOwnerLabelName] = lid.Owner
-	labels[AkashLeaseOSeqLabelName] = strconv.FormatUint(uint64(lid.OSeq), 10)
-	labels[AkashLeaseProviderLabelName] = lid.Provider
+	labels[UbicLeaseOwnerLabelName] = lid.Owner
+	labels[UbicLeaseOSeqLabelName] = strconv.FormatUint(uint64(lid.OSeq), 10)
+	labels[UbicLeaseProviderLabelName] = lid.Provider
 	return labels
 }

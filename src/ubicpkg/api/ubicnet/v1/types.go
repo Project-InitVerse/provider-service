@@ -95,7 +95,7 @@ type LeaseID struct {
 	Provider string `json:"provider"`
 }
 
-// ToUbictype returns LeaseID from LeaseID details
+// ToUbicType returns LeaseID from LeaseID details
 func (id LeaseID) ToUbicType() (ctypes.LeaseID, error) {
 	return ctypes.LeaseID{
 		Owner:    id.Owner,
@@ -104,7 +104,7 @@ func (id LeaseID) ToUbicType() (ctypes.LeaseID, error) {
 	}, nil
 }
 
-// LeaseIDFromAkash returns LeaseID instance from akash
+// LeaseIDFromUbictype returns LeaseID instance from akash
 func LeaseIDFromUbictype(id ctypes.LeaseID) LeaseID {
 	return LeaseID{
 		Owner:    id.Owner,
@@ -121,7 +121,7 @@ type ManifestGroup struct {
 	Services []ManifestService `json:"services,omitempty"`
 }
 
-// ToAkash returns akash group details formatted from manifest group
+// toAkash returns akash group details formatted from manifest group
 func (m ManifestGroup) toAkash() (maniv2beta1.Group, error) {
 	am := maniv2beta1.Group{
 		Name:     m.Name,
@@ -139,7 +139,7 @@ func (m ManifestGroup) toAkash() (maniv2beta1.Group, error) {
 	return am, nil
 }
 
-// ManifestGroupFromAkash returns manifest group instance from akash group
+// manifestGroupFromAkash returns manifest group instance from akash group
 func manifestGroupFromAkash(m *maniv2beta1.Group) (ManifestGroup, error) {
 	ma := ManifestGroup{
 		Name:     m.Name,
@@ -158,12 +158,14 @@ func manifestGroupFromAkash(m *maniv2beta1.Group) (ManifestGroup, error) {
 	return ma, nil
 }
 
+// ManifestStorageParams is struct
 type ManifestStorageParams struct {
 	Name     string `json:"name" yaml:"name"`
 	Mount    string `json:"mount" yaml:"mount"`
 	ReadOnly bool   `json:"readOnly" yaml:"readOnly"`
 }
 
+// ManifestServiceParams is struct
 type ManifestServiceParams struct {
 	Storage []ManifestStorageParams `json:"storage,omitempty"`
 }
@@ -289,6 +291,7 @@ type ManifestServiceExpose struct {
 	EndpointSequenceNumber uint32                           `json:"endpoint_sequence_number"`
 }
 
+//ManifestServiceExposeHTTPOptions is struct
 type ManifestServiceExposeHTTPOptions struct {
 	MaxBodySize uint32   `json:"max_body_size,omitempty"`
 	ReadTimeout uint32   `json:"read_timeout,omitempty"`
@@ -323,6 +326,7 @@ func (mse ManifestServiceExpose) toAkash() (maniv2beta1.ServiceExpose, error) {
 	}, nil
 }
 
+// DetermineExposedExternalPort is function
 func (mse ManifestServiceExpose) DetermineExposedExternalPort() uint16 {
 	if mse.ExternalPort == 0 {
 		return mse.Port
@@ -351,6 +355,7 @@ func manifestServiceExposeFromAkash(amse maniv2beta1.ServiceExpose) ManifestServ
 	}
 }
 
+//ManifestServiceStorage stores name and size
 type ManifestServiceStorage struct {
 	Name string `json:"name"`
 	Size string `json:"size"`
@@ -425,9 +430,9 @@ type ManifestList struct {
 	Items           []Manifest `json:"items"`
 }
 
+// ProviderHost stores spec and status
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 type ProviderHost struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -436,11 +441,13 @@ type ProviderHost struct {
 	Status ProviderHostStatus `json:"status,omitempty"`
 }
 
+// ProviderHostStatus stores state msg
 type ProviderHostStatus struct {
 	State   string `json:"state,omitempty"`
 	Message string `json:"message,omitempty"`
 }
 
+// ProviderHostSpec is struct
 type ProviderHostSpec struct {
 	Owner        string `json:"owner"`
 	Provider     string `json:"provider"`
@@ -450,6 +457,7 @@ type ProviderHostSpec struct {
 	ExternalPort uint32 `json:"external_port"`
 }
 
+//ProviderHostList is struct
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ProviderHostList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -457,6 +465,7 @@ type ProviderHostList struct {
 	Items           []ProviderHost `json:"items"`
 }
 
+//ProviderLeasedIP is struct
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ProviderLeasedIP struct {
@@ -467,6 +476,7 @@ type ProviderLeasedIP struct {
 	Status ProviderLeasedIPStatus `json:"status,omitempty"`
 }
 
+//ProviderLeasedIPList is struct
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ProviderLeasedIPList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -474,11 +484,13 @@ type ProviderLeasedIPList struct {
 	Items           []ProviderLeasedIP `json:"items"`
 }
 
+//ProviderLeasedIPStatus is struct
 type ProviderLeasedIPStatus struct {
 	State   string `json:"state,omitempty"`
 	Message string `json:"message,omitempty"`
 }
 
+//ProviderLeasedIPSpec is struct
 type ProviderLeasedIPSpec struct {
 	LeaseID      LeaseID `json:"lease_id"`
 	ServiceName  string  `json:"service_name"`

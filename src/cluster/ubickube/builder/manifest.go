@@ -8,6 +8,7 @@ import (
 	crd "providerService/src/ubicpkg/api/ubicnet/v1"
 )
 
+// Manifest is interface
 type Manifest interface {
 	builderBase
 	Create() (*crd.Manifest, error)
@@ -24,6 +25,7 @@ type manifest struct {
 
 var _ Manifest = (*manifest)(nil)
 
+// BuildManifest is function to build Manifest
 func BuildManifest(log log.Logger, settings Settings, ns string, lid ctypes.LeaseID, group *manitypes.Group) Manifest {
 	return &manifest{
 		builder: builder{

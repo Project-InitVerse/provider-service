@@ -20,11 +20,11 @@ package v1
 
 import (
 	"context"
+	ubicnetv1 "providerService/src/ubicpkg/api/ubicnet/v1"
+	versioned "providerService/src/ubicpkg/client/clientset/versioned"
+	internalinterfaces "providerService/src/ubicpkg/client/informers/externalversions/internalinterfaces"
+	v1 "providerService/src/ubicpkg/client/listers/ubicnet/v1"
 	time "time"
-	ubicnetv1 "ubicpkg/api/ubicnet/v1"
-	versioned "ubicpkg/client/clientset/versioned"
-	internalinterfaces "ubicpkg/client/informers/externalversions/internalinterfaces"
-	v1 "ubicpkg/client/listers/ubicnet/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"

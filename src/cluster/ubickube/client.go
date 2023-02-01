@@ -80,17 +80,41 @@ func NewClient(ctx context.Context, log log.Logger, ns string, configPath string
 	if err != nil {
 		return nil, errors.Wrap(err, "kube: unable to fetch leases namespace")
 	}
-
 	mc, err := ubicclient.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "kube: error creating manifest client")
 	}
-
 	metc, err := metricsclient.NewForConfig(config)
 	if err != nil {
 		return nil, errors.Wrap(err, "kube: error creating metrics client")
 	}
-
+	//lst, err := metc.MetricsV1beta1().NodeMetricses().List(context.Background(), metav1.ListOptions{})
+	//if err != nil {
+	//	fmt.Println("MetricsV1beta1", err.Error())
+	//} else {
+	//	for _, v := range lst.Items {
+	//		fmt.Println("MetricsV1beta1", v.Name, v.APIVersion, v.Namespace)
+	//		fmt.Println(v.Usage.CPU().MilliValue())
+	//		fmt.Println(v.Usage.Memory().AsInt64())
+	//		fmt.Println(v.Usage.StorageEphemeral())
+	//	}
+	//	alst, err := metc.MetricsV1beta1().PodMetricses("").List(context.Background(), metav1.ListOptions{})
+	//	if err != nil {
+	//		fmt.Println("PodMetricses", err.Error())
+	//	} else {
+	//		for _, v := range alst.Items {
+	//			fmt.Println("MetricsV1beta1,pod", v.Name, v.APIVersion, v.Namespace)
+	//			fmt.Println("--------------------pod s-----------")
+	//			for _, vi := range v.Containers {
+	//				fmt.Println(vi.Usage.CPU().MilliValue())
+	//				fmt.Println(vi.Usage.Memory().AsInt64())
+	//				fmt.Println(vi.Usage.StorageEphemeral())
+	//			}
+	//			fmt.Println("--------------------pod e-----------")
+	//		}
+	//	}
+	//
+	//}
 	return &client{
 		kc:                kc,
 		ac:                mc,
@@ -103,8 +127,8 @@ func NewClient(ctx context.Context, log log.Logger, ns string, configPath string
 
 func (c *client) GetDeployments(ctx context.Context, dID dtypes.DeploymentID) ([]ctypes.Deployment, error) {
 	labelSelectors := &strings.Builder{}
-	_, _ = fmt.Fprintf(labelSelectors, "%s=%d", builder.AkashLeaseDSeqLabelName, dID.DSeq)
-	_, _ = fmt.Fprintf(labelSelectors, ",%s=%s", builder.AkashLeaseOwnerLabelName, dID.Owner)
+	_, _ = fmt.Fprintf(labelSelectors, "%s=%d", builder.UbicLeaseDSeqLabelName, dID.DSeq)
+	_, _ = fmt.Fprintf(labelSelectors, ",%s=%s", builder.UbicLeaseOwnerLabelName, dID.Owner)
 
 	manifests, err := c.ac.UbicnetV1().Manifests(c.ns).List(ctx, metav1.ListOptions{
 		TypeMeta:             metav1.TypeMeta{},
@@ -169,7 +193,6 @@ func (c *client) Deployments(ctx context.Context) ([]ctypes.Deployment, error) {
 }
 
 func (c *client) Deploy(ctx context.Context, lid ctypes.LeaseID, group *manifest.Group) error {
-	fmt.Println("----------------------Deploy-------------")
 	settingsI := ctx.Value(builder.SettingsKey)
 	if nil == settingsI {
 		return kubeclienterrors.ErrNotConfiguredWithSettings
@@ -178,18 +201,14 @@ func (c *client) Deploy(ctx context.Context, lid ctypes.LeaseID, group *manifest
 	if err := builder.ValidateSettings(settings); err != nil {
 		return err
 	}
-	fmt.Println("----------------------BuildNS------------")
 	if err := applyNS(ctx, c.kc, builder.BuildNS(settings, lid, group)); err != nil {
 		c.log.Error("applying namespace", "err", err, "lease", lid)
 		return err
 	}
-	fmt.Println("----------------------BuildNetPol------------")
 	if err := applyNetPolicies(ctx, c.kc, builder.BuildNetPol(settings, lid, group)); err != nil { //
 		c.log.Error("applying namespace network policies", "err", err, "lease", lid)
 		return err
 	}
-	fmt.Println("----------------------BuildManifest------------")
-	fmt.Println(c.ns, lid, group)
 	if err := applyManifest(ctx, c.ac, builder.BuildManifest(c.log, settings, c.ns, lid, group)); err != nil {
 		c.log.Error("applying manifest", "err", err, "lease", lid)
 		return err
@@ -202,7 +221,7 @@ func (c *client) Deploy(ctx context.Context, lid ctypes.LeaseID, group *manifest
 
 	for svcIdx := range group.Services {
 		service := &group.Services[svcIdx]
-
+		fmt.Println("serivice is ", service)
 		persistent := false
 		for i := range service.Resources.Storage {
 			attrVal := service.Resources.Storage[i].Attributes.Find(sdl.StorageAttributePersistent)
@@ -266,8 +285,8 @@ func (c *client) TeardownLease(ctx context.Context, lid ctypes.LeaseID) error {
 }
 
 func kubeSelectorForLease(dst *strings.Builder, lID ctypes.LeaseID) {
-	_, _ = fmt.Fprintf(dst, "%s=%s", builder.AkashLeaseOwnerLabelName, lID.Owner)
-	_, _ = fmt.Fprintf(dst, ",%s=%d", builder.AkashLeaseOSeqLabelName, lID.OSeq)
+	_, _ = fmt.Fprintf(dst, "%s=%s", builder.UbicLeaseOwnerLabelName, lID.Owner)
+	_, _ = fmt.Fprintf(dst, ",%s=%d", builder.UbicLeaseOSeqLabelName, lID.OSeq)
 }
 
 func newEventsFeedList(ctx context.Context, events []eventsv1.Event) ctypes.EventsWatcher {
@@ -324,7 +343,7 @@ func (c *client) LeaseEvents(ctx context.Context, lid ctypes.LeaseID, services s
 
 	listOpts := metav1.ListOptions{}
 	if len(services) != 0 {
-		listOpts.LabelSelector = fmt.Sprintf(builder.AkashManifestServiceLabelName+" in (%s)", services)
+		listOpts.LabelSelector = fmt.Sprintf(builder.UbicManifestServiceLabelName+" in (%s)", services)
 	}
 
 	var wtch ctypes.EventsWatcher
@@ -365,7 +384,7 @@ func (c *client) LeaseLogs(ctx context.Context, lid ctypes.LeaseID,
 
 	listOpts := metav1.ListOptions{}
 	if len(services) != 0 {
-		listOpts.LabelSelector = fmt.Sprintf(builder.AkashManifestServiceLabelName+" in (%s)", services)
+		listOpts.LabelSelector = fmt.Sprintf(builder.UbicManifestServiceLabelName+" in (%s)", services)
 	}
 
 	c.log.Error("filtering pods", "labelSelector", listOpts.LabelSelector)

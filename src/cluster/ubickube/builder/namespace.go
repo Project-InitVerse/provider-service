@@ -8,6 +8,7 @@ import (
 	manitypes "github.com/ovrclk/akash/manifest/v2beta1"
 )
 
+// NS is interface
 type NS interface {
 	builderBase
 	Create() (*corev1.Namespace, error)
@@ -20,6 +21,7 @@ type ns struct {
 
 var _ NS = (*ns)(nil)
 
+// BuildNS is function build namespace
 func BuildNS(settings Settings, lid ctypes.LeaseID, group *manitypes.Group) NS {
 	return &ns{builder: builder{settings: settings, lid: lid, group: group}}
 }

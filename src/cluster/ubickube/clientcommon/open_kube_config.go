@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/util/flowcontrol"
 )
 
+// OpenKubeConfig is function read k8s config
 func OpenKubeConfig(cfgPath string, log log.Logger) (*rest.Config, error) {
 	// Always bypass the default rate limiting
 	rateLimiter := flowcontrol.NewFakeAlwaysRateLimiter()

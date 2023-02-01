@@ -9,6 +9,7 @@ import (
 	ctypes "providerService/src/cluster/types/v1"
 )
 
+// Deployment is interface
 type Deployment interface {
 	workloadBase
 	Create() (*appsv1.Deployment, error)
@@ -21,6 +22,7 @@ type deployment struct {
 
 var _ Deployment = (*deployment)(nil)
 
+// NewDeployment is function create deployment
 func NewDeployment(log log.Logger, settings Settings, lid ctypes.LeaseID, group *manitypes.Group, service *manitypes.Service) Deployment {
 	return &deployment{
 		workload: newWorkloadBuilder(log, settings, lid, group, service),

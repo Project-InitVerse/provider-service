@@ -28,13 +28,14 @@ var (
 
 // Order is an auto generated low-level Go binding around an user-defined struct.
 type Order struct {
-	Owner    common.Address
-	VCpu     *big.Int
-	VMemory  *big.Int
-	VStorage *big.Int
-	CertKey  string
-	TrxId    *big.Int
-	State    uint8
+	ContractAddress common.Address
+	Owner           common.Address
+	VCpu            *big.Int
+	VMemory         *big.Int
+	VStorage        *big.Int
+	CertKey         *big.Int
+	TrxId           *big.Int
+	State           uint8
 }
 
 // PriceOracle is an auto generated low-level Go binding around an user-defined struct.
@@ -46,7 +47,7 @@ type PriceOracle struct {
 }
 
 // OrderBaseABI is the input ABI used to generate the binding from.
-const OrderBaseABI = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_order_factory\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"provider_factory_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"cpu_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"cert_key_\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"sdl_trx_id_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"order_number\",\"type\":\"uint256\"}],\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"CanQuote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"cpu_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_price\",\"type\":\"uint256\"}],\"indexed\":true,\"internalType\":\"structPriceOracle\",\"name\":\"price\",\"type\":\"tuple\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"final_price\",\"type\":\"uint256\"}],\"name\":\"ChooseQuote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"old_cpu\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"old_memory\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"old_storage\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_cpu\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_memory\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_storage\",\"type\":\"uint256\"}],\"name\":\"DeployMentUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositBalance\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"owner_\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"cpu\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"memory_\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"storage_\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"cert\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"sdl\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"order_number\",\"type\":\"uint256\"}],\"name\":\"OrderCreate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"OrderEnded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"PayBill\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"cpu_price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"memory_price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"storage_price\",\"type\":\"uint256\"}],\"name\":\"Quote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_sdl_trx_id\",\"type\":\"uint256\"}],\"name\":\"UpdateSDL\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"UserCancelOrder\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"new_trx_hash\",\"type\":\"uint256\"}],\"name\":\"change_sdl_trx_hash\",\"outputs\":[],\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"quote_index\",\"type\":\"uint256\"}],\"name\":\"choose_provider\",\"outputs\":[],\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit_balance\",\"outputs\":[],\"type\":\"function\"},{\"inputs\":[],\"name\":\"final_choice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"final_price\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"last_pay_time\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_cert\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_cpu\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_memory\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_order_number\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_pending_sdl_trx_id\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_sdl_trx_id\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_storage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"order_info\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"cert_key\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"}],\"internalType\":\"structOrder\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"order_status\",\"outputs\":[{\"internalType\":\"enumOrderStatus\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pay_billing\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"provide_quotes\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"cpu_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_price\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"provider_factory\",\"outputs\":[{\"internalType\":\"contractIProviderFactory\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"query_provider_address\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"p_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"p_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"p_storage\",\"type\":\"uint256\"}],\"name\":\"quote\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"server_uri\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"uri\",\"type\":\"string\"}],\"name\":\"submit_server_uri\",\"outputs\":[],\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"cpu_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"uri_\",\"type\":\"string\"}],\"name\":\"update_deployment\",\"outputs\":[],\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw_fund\",\"outputs\":[],\"type\":\"function\"}]"
+const OrderBaseABI = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_order_factory\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"provider_factory_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner_\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"cpu_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"sdl_trx_id_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"order_number\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"CanQuote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"final_price\",\"type\":\"uint256\"}],\"name\":\"ChooseQuote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"old_cpu\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"old_memory\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"old_storage\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_cpu\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_memory\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_storage\",\"type\":\"uint256\"}],\"name\":\"DeployMentUpdated\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositBalance\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"owner_\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"cpu\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"memory_\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"storage_\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"cert\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"sdl\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"order_number\",\"type\":\"uint256\"}],\"name\":\"OrderCreate\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"OrderEnded\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"PayBill\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"cpu_price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"memory_price\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"storage_price\",\"type\":\"uint256\"}],\"name\":\"Quote\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"new_sdl_trx_id\",\"type\":\"uint256\"}],\"name\":\"UpdateSDL\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"UserCancelOrder\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"new_trx_hash\",\"type\":\"uint256\"}],\"name\":\"change_sdl_trx_hash\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"quote_index\",\"type\":\"uint256\"}],\"name\":\"choose_provider\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit_balance\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"final_choice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"final_price\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"last_pay_time\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_cert\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_cpu\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_memory\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_order_number\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_pending_sdl_trx_id\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_sdl_trx_id\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"o_storage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"order_info\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"}],\"internalType\":\"structOrder\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"order_status\",\"outputs\":[{\"internalType\":\"enumOrderStatus\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"pay_billing\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"provide_quotes\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"cpu_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_price\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"provider_factory\",\"outputs\":[{\"internalType\":\"contractIProviderFactory\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"query_provide_quotes\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"provider\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"cpu_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_price\",\"type\":\"uint256\"}],\"internalType\":\"structPriceOracle[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"query_provider_address\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"p_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"p_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"p_storage\",\"type\":\"uint256\"}],\"name\":\"quote\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"server_uri\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"uri\",\"type\":\"string\"}],\"name\":\"submit_server_uri\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSpent\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"cpu_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"memory_\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"storage_\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"uri_\",\"type\":\"string\"}],\"name\":\"update_deployment\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw_fund\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // OrderBase is an auto generated Go binding around an Ethereum contract.
 type OrderBase struct {
@@ -285,16 +286,16 @@ func (_OrderBase *OrderBaseCallerSession) LastPayTime() (*big.Int, error) {
 
 // OCert is a free data retrieval call binding the contract method 0xcc61ac87.
 //
-// Solidity: function o_cert() view returns(string)
-func (_OrderBase *OrderBaseCaller) OCert(opts *bind.CallOpts) (string, error) {
+// Solidity: function o_cert() view returns(uint256)
+func (_OrderBase *OrderBaseCaller) OCert(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
 	err := _OrderBase.contract.Call(opts, &out, "o_cert")
 
 	if err != nil {
-		return *new(string), err
+		return *new(*big.Int), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(string)).(*string)
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
 
 	return out0, err
 
@@ -302,15 +303,15 @@ func (_OrderBase *OrderBaseCaller) OCert(opts *bind.CallOpts) (string, error) {
 
 // OCert is a free data retrieval call binding the contract method 0xcc61ac87.
 //
-// Solidity: function o_cert() view returns(string)
-func (_OrderBase *OrderBaseSession) OCert() (string, error) {
+// Solidity: function o_cert() view returns(uint256)
+func (_OrderBase *OrderBaseSession) OCert() (*big.Int, error) {
 	return _OrderBase.Contract.OCert(&_OrderBase.CallOpts)
 }
 
 // OCert is a free data retrieval call binding the contract method 0xcc61ac87.
 //
-// Solidity: function o_cert() view returns(string)
-func (_OrderBase *OrderBaseCallerSession) OCert() (string, error) {
+// Solidity: function o_cert() view returns(uint256)
+func (_OrderBase *OrderBaseCallerSession) OCert() (*big.Int, error) {
 	return _OrderBase.Contract.OCert(&_OrderBase.CallOpts)
 }
 
@@ -502,7 +503,7 @@ func (_OrderBase *OrderBaseCallerSession) OStorage() (*big.Int, error) {
 
 // OrderInfo is a free data retrieval call binding the contract method 0x2500f01d.
 //
-// Solidity: function order_info() view returns((address,uint256,uint256,uint256,string,uint256,uint8))
+// Solidity: function order_info() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8))
 func (_OrderBase *OrderBaseCaller) OrderInfo(opts *bind.CallOpts) (Order, error) {
 	var out []interface{}
 	err := _OrderBase.contract.Call(opts, &out, "order_info")
@@ -519,14 +520,14 @@ func (_OrderBase *OrderBaseCaller) OrderInfo(opts *bind.CallOpts) (Order, error)
 
 // OrderInfo is a free data retrieval call binding the contract method 0x2500f01d.
 //
-// Solidity: function order_info() view returns((address,uint256,uint256,uint256,string,uint256,uint8))
+// Solidity: function order_info() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8))
 func (_OrderBase *OrderBaseSession) OrderInfo() (Order, error) {
 	return _OrderBase.Contract.OrderInfo(&_OrderBase.CallOpts)
 }
 
 // OrderInfo is a free data retrieval call binding the contract method 0x2500f01d.
 //
-// Solidity: function order_info() view returns((address,uint256,uint256,uint256,string,uint256,uint8))
+// Solidity: function order_info() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8))
 func (_OrderBase *OrderBaseCallerSession) OrderInfo() (Order, error) {
 	return _OrderBase.Contract.OrderInfo(&_OrderBase.CallOpts)
 }
@@ -676,6 +677,37 @@ func (_OrderBase *OrderBaseCallerSession) ProviderFactory() (common.Address, err
 	return _OrderBase.Contract.ProviderFactory(&_OrderBase.CallOpts)
 }
 
+// QueryProvideQuotes is a free data retrieval call binding the contract method 0x214c9d35.
+//
+// Solidity: function query_provide_quotes() view returns((address,uint256,uint256,uint256)[])
+func (_OrderBase *OrderBaseCaller) QueryProvideQuotes(opts *bind.CallOpts) ([]PriceOracle, error) {
+	var out []interface{}
+	err := _OrderBase.contract.Call(opts, &out, "query_provide_quotes")
+
+	if err != nil {
+		return *new([]PriceOracle), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new([]PriceOracle)).(*[]PriceOracle)
+
+	return out0, err
+
+}
+
+// QueryProvideQuotes is a free data retrieval call binding the contract method 0x214c9d35.
+//
+// Solidity: function query_provide_quotes() view returns((address,uint256,uint256,uint256)[])
+func (_OrderBase *OrderBaseSession) QueryProvideQuotes() ([]PriceOracle, error) {
+	return _OrderBase.Contract.QueryProvideQuotes(&_OrderBase.CallOpts)
+}
+
+// QueryProvideQuotes is a free data retrieval call binding the contract method 0x214c9d35.
+//
+// Solidity: function query_provide_quotes() view returns((address,uint256,uint256,uint256)[])
+func (_OrderBase *OrderBaseCallerSession) QueryProvideQuotes() ([]PriceOracle, error) {
+	return _OrderBase.Contract.QueryProvideQuotes(&_OrderBase.CallOpts)
+}
+
 // QueryProviderAddress is a free data retrieval call binding the contract method 0x3b3b5147.
 //
 // Solidity: function query_provider_address() view returns(address)
@@ -738,6 +770,37 @@ func (_OrderBase *OrderBaseCallerSession) ServerUri() (string, error) {
 	return _OrderBase.Contract.ServerUri(&_OrderBase.CallOpts)
 }
 
+// TotalSpent is a free data retrieval call binding the contract method 0xfb346eab.
+//
+// Solidity: function totalSpent() view returns(uint256)
+func (_OrderBase *OrderBaseCaller) TotalSpent(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _OrderBase.contract.Call(opts, &out, "totalSpent")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// TotalSpent is a free data retrieval call binding the contract method 0xfb346eab.
+//
+// Solidity: function totalSpent() view returns(uint256)
+func (_OrderBase *OrderBaseSession) TotalSpent() (*big.Int, error) {
+	return _OrderBase.Contract.TotalSpent(&_OrderBase.CallOpts)
+}
+
+// TotalSpent is a free data retrieval call binding the contract method 0xfb346eab.
+//
+// Solidity: function totalSpent() view returns(uint256)
+func (_OrderBase *OrderBaseCallerSession) TotalSpent() (*big.Int, error) {
+	return _OrderBase.Contract.TotalSpent(&_OrderBase.CallOpts)
+}
+
 // ChangeSdlTrxHash is a paid mutator transaction binding the contract method 0xd809d3c3.
 //
 // Solidity: function change_sdl_trx_hash(uint256 new_trx_hash) returns()
@@ -782,21 +845,21 @@ func (_OrderBase *OrderBaseTransactorSession) ChooseProvider(quote_index *big.In
 
 // DepositBalance is a paid mutator transaction binding the contract method 0x8627436b.
 //
-// Solidity: function deposit_balance() returns()
+// Solidity: function deposit_balance() payable returns()
 func (_OrderBase *OrderBaseTransactor) DepositBalance(opts *bind.TransactOpts) (*types.Transaction, error) {
 	return _OrderBase.contract.Transact(opts, "deposit_balance")
 }
 
 // DepositBalance is a paid mutator transaction binding the contract method 0x8627436b.
 //
-// Solidity: function deposit_balance() returns()
+// Solidity: function deposit_balance() payable returns()
 func (_OrderBase *OrderBaseSession) DepositBalance() (*types.Transaction, error) {
 	return _OrderBase.Contract.DepositBalance(&_OrderBase.TransactOpts)
 }
 
 // DepositBalance is a paid mutator transaction binding the contract method 0x8627436b.
 //
-// Solidity: function deposit_balance() returns()
+// Solidity: function deposit_balance() payable returns()
 func (_OrderBase *OrderBaseTransactorSession) DepositBalance() (*types.Transaction, error) {
 	return _OrderBase.Contract.DepositBalance(&_OrderBase.TransactOpts)
 }
@@ -1107,47 +1170,47 @@ func (it *OrderBaseChooseQuoteIterator) Close() error {
 
 // OrderBaseChooseQuote represents a ChooseQuote event raised by the OrderBase contract.
 type OrderBaseChooseQuote struct {
-	Price      PriceOracle
+	Provider   common.Address
 	FinalPrice *big.Int
 	Raw        types.Log // Blockchain specific contextual infos
 }
 
-// FilterChooseQuote is a free log retrieval operation binding the contract event 0xf4da0beb10e508fd755b361cd47f553d7c16f9e790aa6cb1c2aae69a1e38c013.
+// FilterChooseQuote is a free log retrieval operation binding the contract event 0x40b763fcbe2138c8d50a909799fd5f1690100032212cbf680152269eabab7831.
 //
-// Solidity: event ChooseQuote((address,uint256,uint256,uint256) indexed price, uint256 indexed final_price)
-func (_OrderBase *OrderBaseFilterer) FilterChooseQuote(opts *bind.FilterOpts, price []PriceOracle, final_price []*big.Int) (*OrderBaseChooseQuoteIterator, error) {
+// Solidity: event ChooseQuote(address indexed provider, uint256 indexed final_price)
+func (_OrderBase *OrderBaseFilterer) FilterChooseQuote(opts *bind.FilterOpts, provider []common.Address, final_price []*big.Int) (*OrderBaseChooseQuoteIterator, error) {
 
-	var priceRule []interface{}
-	for _, priceItem := range price {
-		priceRule = append(priceRule, priceItem)
+	var providerRule []interface{}
+	for _, providerItem := range provider {
+		providerRule = append(providerRule, providerItem)
 	}
 	var final_priceRule []interface{}
 	for _, final_priceItem := range final_price {
 		final_priceRule = append(final_priceRule, final_priceItem)
 	}
 
-	logs, sub, err := _OrderBase.contract.FilterLogs(opts, "ChooseQuote", priceRule, final_priceRule)
+	logs, sub, err := _OrderBase.contract.FilterLogs(opts, "ChooseQuote", providerRule, final_priceRule)
 	if err != nil {
 		return nil, err
 	}
 	return &OrderBaseChooseQuoteIterator{contract: _OrderBase.contract, event: "ChooseQuote", logs: logs, sub: sub}, nil
 }
 
-// WatchChooseQuote is a free log subscription operation binding the contract event 0xf4da0beb10e508fd755b361cd47f553d7c16f9e790aa6cb1c2aae69a1e38c013.
+// WatchChooseQuote is a free log subscription operation binding the contract event 0x40b763fcbe2138c8d50a909799fd5f1690100032212cbf680152269eabab7831.
 //
-// Solidity: event ChooseQuote((address,uint256,uint256,uint256) indexed price, uint256 indexed final_price)
-func (_OrderBase *OrderBaseFilterer) WatchChooseQuote(opts *bind.WatchOpts, sink chan<- *OrderBaseChooseQuote, price []PriceOracle, final_price []*big.Int) (event.Subscription, error) {
+// Solidity: event ChooseQuote(address indexed provider, uint256 indexed final_price)
+func (_OrderBase *OrderBaseFilterer) WatchChooseQuote(opts *bind.WatchOpts, sink chan<- *OrderBaseChooseQuote, provider []common.Address, final_price []*big.Int) (event.Subscription, error) {
 
-	var priceRule []interface{}
-	for _, priceItem := range price {
-		priceRule = append(priceRule, priceItem)
+	var providerRule []interface{}
+	for _, providerItem := range provider {
+		providerRule = append(providerRule, providerItem)
 	}
 	var final_priceRule []interface{}
 	for _, final_priceItem := range final_price {
 		final_priceRule = append(final_priceRule, final_priceItem)
 	}
 
-	logs, sub, err := _OrderBase.contract.WatchLogs(opts, "ChooseQuote", priceRule, final_priceRule)
+	logs, sub, err := _OrderBase.contract.WatchLogs(opts, "ChooseQuote", providerRule, final_priceRule)
 	if err != nil {
 		return nil, err
 	}
@@ -1179,9 +1242,9 @@ func (_OrderBase *OrderBaseFilterer) WatchChooseQuote(opts *bind.WatchOpts, sink
 	}), nil
 }
 
-// ParseChooseQuote is a log parse operation binding the contract event 0xf4da0beb10e508fd755b361cd47f553d7c16f9e790aa6cb1c2aae69a1e38c013.
+// ParseChooseQuote is a log parse operation binding the contract event 0x40b763fcbe2138c8d50a909799fd5f1690100032212cbf680152269eabab7831.
 //
-// Solidity: event ChooseQuote((address,uint256,uint256,uint256) indexed price, uint256 indexed final_price)
+// Solidity: event ChooseQuote(address indexed provider, uint256 indexed final_price)
 func (_OrderBase *OrderBaseFilterer) ParseChooseQuote(log types.Log) (*OrderBaseChooseQuote, error) {
 	event := new(OrderBaseChooseQuote)
 	if err := _OrderBase.contract.UnpackLog(event, "ChooseQuote", log); err != nil {
@@ -1544,15 +1607,15 @@ type OrderBaseOrderCreate struct {
 	Cpu         *big.Int
 	Memory      *big.Int
 	Storage     *big.Int
-	Cert        string
+	Cert        *big.Int
 	Sdl         *big.Int
 	OrderNumber *big.Int
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterOrderCreate is a free log retrieval operation binding the contract event 0x1103862927c5f9711091b9a8eb9eb4f04efdc3d4e8475e2aca55f20d733d3011.
+// FilterOrderCreate is a free log retrieval operation binding the contract event 0x54c2886880d2438c34b17297401499ffbc5e9663e148d1703e4658a4a0eefc95.
 //
-// Solidity: event OrderCreate(address owner_, uint256 cpu, uint256 memory_, uint256 storage_, string cert, uint256 sdl, uint256 order_number)
+// Solidity: event OrderCreate(address owner_, uint256 cpu, uint256 memory_, uint256 storage_, uint256 cert, uint256 sdl, uint256 order_number)
 func (_OrderBase *OrderBaseFilterer) FilterOrderCreate(opts *bind.FilterOpts) (*OrderBaseOrderCreateIterator, error) {
 
 	logs, sub, err := _OrderBase.contract.FilterLogs(opts, "OrderCreate")
@@ -1562,9 +1625,9 @@ func (_OrderBase *OrderBaseFilterer) FilterOrderCreate(opts *bind.FilterOpts) (*
 	return &OrderBaseOrderCreateIterator{contract: _OrderBase.contract, event: "OrderCreate", logs: logs, sub: sub}, nil
 }
 
-// WatchOrderCreate is a free log subscription operation binding the contract event 0x1103862927c5f9711091b9a8eb9eb4f04efdc3d4e8475e2aca55f20d733d3011.
+// WatchOrderCreate is a free log subscription operation binding the contract event 0x54c2886880d2438c34b17297401499ffbc5e9663e148d1703e4658a4a0eefc95.
 //
-// Solidity: event OrderCreate(address owner_, uint256 cpu, uint256 memory_, uint256 storage_, string cert, uint256 sdl, uint256 order_number)
+// Solidity: event OrderCreate(address owner_, uint256 cpu, uint256 memory_, uint256 storage_, uint256 cert, uint256 sdl, uint256 order_number)
 func (_OrderBase *OrderBaseFilterer) WatchOrderCreate(opts *bind.WatchOpts, sink chan<- *OrderBaseOrderCreate) (event.Subscription, error) {
 
 	logs, sub, err := _OrderBase.contract.WatchLogs(opts, "OrderCreate")
@@ -1599,9 +1662,9 @@ func (_OrderBase *OrderBaseFilterer) WatchOrderCreate(opts *bind.WatchOpts, sink
 	}), nil
 }
 
-// ParseOrderCreate is a log parse operation binding the contract event 0x1103862927c5f9711091b9a8eb9eb4f04efdc3d4e8475e2aca55f20d733d3011.
+// ParseOrderCreate is a log parse operation binding the contract event 0x54c2886880d2438c34b17297401499ffbc5e9663e148d1703e4658a4a0eefc95.
 //
-// Solidity: event OrderCreate(address owner_, uint256 cpu, uint256 memory_, uint256 storage_, string cert, uint256 sdl, uint256 order_number)
+// Solidity: event OrderCreate(address owner_, uint256 cpu, uint256 memory_, uint256 storage_, uint256 cert, uint256 sdl, uint256 order_number)
 func (_OrderBase *OrderBaseFilterer) ParseOrderCreate(log types.Log) (*OrderBaseOrderCreate, error) {
 	event := new(OrderBaseOrderCreate)
 	if err := _OrderBase.contract.UnpackLog(event, "OrderCreate", log); err != nil {

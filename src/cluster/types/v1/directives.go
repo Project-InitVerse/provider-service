@@ -4,6 +4,7 @@ import (
 	manifest "github.com/ovrclk/akash/manifest/v2beta1"
 )
 
+// ConnectHostnameToDeploymentDirective is struct
 type ConnectHostnameToDeploymentDirective struct {
 	Hostname    string
 	LeaseID     LeaseID
@@ -17,6 +18,7 @@ type ConnectHostnameToDeploymentDirective struct {
 	NextCases   []string
 }
 
+// ClusterIPPassthroughDirective is struct
 type ClusterIPPassthroughDirective struct {
 	LeaseID      LeaseID
 	ServiceName  string

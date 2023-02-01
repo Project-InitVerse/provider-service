@@ -4,14 +4,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// InventoryState define string type
 type InventoryState string
 
+// Define inventory type
 const (
 	InventoryStatePulled = InventoryState("PULLED")
 	InventoryStateError  = InventoryState("ERROR")
 )
 
-// InventoryRequest
+// InventoryRequest is struct
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -23,10 +25,12 @@ type InventoryRequest struct {
 	Status InventoryRequestStatus `json:"status,omitempty"`
 }
 
+// InventoryRequestSpec stores name
 type InventoryRequestSpec struct {
 	Name string `json:"name"`
 }
 
+// InventoryRequestStatus stores state & msg
 type InventoryRequestStatus struct {
 	State   string `json:"state,omitempty"`
 	Message string `json:"message,omitempty"`
@@ -40,7 +44,7 @@ type InventoryRequestList struct {
 	Items           []InventoryRequest `json:"items"`
 }
 
-// Inventory
+// Inventory is struct
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -60,20 +64,24 @@ type InventoryList struct {
 	Items           []Inventory `json:"items"`
 }
 
+// InventoryStatus stores state and list of msg
 type InventoryStatus struct {
 	State    InventoryState `json:"state,omitempty"`
 	Messages []string       `json:"message,omitempty"`
 }
 
+// InventoryClusterStorage is struct
 type InventoryClusterStorage struct {
 	Class        string `json:"class,omitempty"`
 	ResourcePair `json:",inline"`
 }
 
+// InventorySpec is struct
 type InventorySpec struct {
 	Storage []InventoryClusterStorage `json:"storage"`
 }
 
+// ResourcePair stores allocatable and allocated
 type ResourcePair struct {
 	Allocatable uint64 `json:"allocatable"`
 	Allocated   uint64 `json:"allocated"`

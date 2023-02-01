@@ -60,7 +60,7 @@ func (b *workload) container() corev1.Container {
 			AllowPrivilegeEscalation: &falseValue,
 		},
 	}
-
+	fmt.Println("in workload ", b.service.Resources)
 	if cpu := b.service.Resources.CPU; cpu != nil {
 		requestedCPU := sdlutil.ComputeCommittedResources(b.settings.CPUCommitLevel, cpu.Units)
 		kcontainer.Resources.Requests[corev1.ResourceCPU] = resource.NewScaledQuantity(int64(requestedCPU.Value()), resource.Milli).DeepCopy()
@@ -162,7 +162,7 @@ func (b *workload) Name() string {
 
 func (b *workload) labels() map[string]string {
 	obj := b.builder.labels()
-	obj[AkashManifestServiceLabelName] = b.service.Name
+	obj[UbicManifestServiceLabelName] = b.service.Name
 	return obj
 }
 

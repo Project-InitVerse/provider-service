@@ -275,7 +275,7 @@ func (c *client) fetchStorage(ctx context.Context) (clusterStorage, error) {
 	// discover inventory operator
 	// empty namespace mean search through all namespaces
 	svcResult, err := c.kc.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{
-		LabelSelector: builder.AkashManagedLabelName + "=true" +
+		LabelSelector: builder.UbicManagedLabelName + "=true" +
 			",app.kubernetes.io/name=akash" +
 			",app.kubernetes.io/instance=inventory" +
 			",app.kubernetes.io/component=operator",
@@ -375,7 +375,7 @@ func (c *client) fetchActiveNodes(ctx context.Context, cstorage clusterStorage) 
 			storageClasses: make(map[string]bool),
 		}
 
-		if value, defined := knode.Labels[builder.AkashNetworkStorageClasses]; defined {
+		if value, defined := knode.Labels[builder.UbicNetworkStorageClasses]; defined {
 			for _, class := range strings.Split(value, ".") {
 				if _, avail := cstorage[class]; avail {
 					entry.storageClasses[class] = true

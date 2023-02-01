@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/ovrclk/provider-services/cluster/util"
 	"sync"
 	"time"
 
@@ -13,10 +14,9 @@ import (
 	"github.com/boz/go-lifecycle"
 	manifest "github.com/ovrclk/akash/manifest/v2beta1"
 	sdlutil "github.com/ovrclk/akash/sdl/util"
-	kubeclienterrors "providerService/src/cluster/kube/errors"
 	clustertypes "providerService/src/cluster/types/v1"
+	kubeclienterrors "providerService/src/cluster/ubickube/errors"
 	clusterutil "providerService/src/cluster/ubicutil"
-	"providerService/src/cluster/util"
 )
 
 const (
@@ -42,9 +42,11 @@ var (
 			Name: "provider_deployment_monitor",
 		}, []string{"action"})
 	*/
-	ubicErrLeaseInactive = errors.New("inactive Lease")
+
+	errUbicLeaseInactive = errors.New("inactive Lease")
 )
 
+// UbicDeploymentManager is struct
 type UbicDeploymentManager struct {
 	client UbicClient
 
@@ -68,6 +70,7 @@ type UbicDeploymentManager struct {
 	serviceShuttingDown <-chan struct{}
 }
 
+// NewUbicDeploymentManager create deployment manager
 func NewUbicDeploymentManager(ctx context.Context,
 	client UbicClient,
 	lease clustertypes.LeaseID,
@@ -116,6 +119,7 @@ func (dm *UbicDeploymentManager) update(mgroup *manifest.Group) error {
 	}
 }
 
+// Teardown is shutdown deployment
 func (dm *UbicDeploymentManager) Teardown() error {
 	select {
 	case dm.teardownch <- struct{}{}:
@@ -344,6 +348,7 @@ func (dm *UbicDeploymentManager) doDeploy(ctx context.Context) ([]string, []stri
 	}
 
 	currentIPs, err := dm.client.GetDeclaredIPs(ctx, dm.lease)
+	fmt.Println(currentIPs)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -395,10 +400,14 @@ func (dm *UbicDeploymentManager) doDeploy(ctx context.Context) ([]string, []stri
 	// clear this out so it gets repopulated
 	dm.currentHostnames = make(map[string]struct{})
 	// Iterate over each entry, extracting the ingress services & leased IPs
+	fmt.Println("service length", len(dm.mgroup.Services))
 	for _, service := range dm.mgroup.Services {
+		fmt.Println("expose is ", service.Expose)
 		for _, expose := range service.Expose {
 			if sdlutil.ShouldBeIngress(expose) {
+				fmt.Println("enter ingress")
 				if dm.config.DeploymentIngressStaticHosts {
+					fmt.Println("enter this")
 					uid := clustertypes.IngressHost(dm.lease, service.Name)
 					host := fmt.Sprintf("%s.%s", uid, dm.config.DeploymentIngressDomain)
 					hosts[host] = expose
@@ -434,7 +443,7 @@ func (dm *UbicDeploymentManager) doDeploy(ctx context.Context) ([]string, []stri
 			cleanupHelper.addIP(currentIP.ServiceName, currentIP.ExternalPort, proto)
 		}
 	}
-
+	fmt.Println("hosts", hosts)
 	for host, serviceExpose := range hosts {
 		externalPort := uint32(sdlutil.ExposeExternalPort(serviceExpose))
 		err = dm.client.DeclareHostname(ctx, dm.lease, host, hostToServiceName[host], externalPort)
@@ -445,6 +454,7 @@ func (dm *UbicDeploymentManager) doDeploy(ctx context.Context) ([]string, []stri
 	}
 
 	withheldEndpoints := make([]string, 0)
+	fmt.Println("leasedIPs", leasedIPs)
 	for _, serviceExpose := range leasedIPs {
 		endpointName := serviceExpose.expose.IP
 		sharingKey := clusterutil.MakeIPSharingKey(dm.lease, endpointName)
@@ -580,7 +590,7 @@ func (dm *UbicDeploymentManager) checkLeaseActive(ctx context.Context) error {
 
 			if lease.GetLease().State != mtypes.LeaseActive {
 				dm.log.Error("lease not active, not deploying")
-				return fmt.Errorf("%w: %s", ubicErrLeaseInactive, dm.lease)
+				return fmt.Errorf("%w: %s", errUbicLeaseInactive, dm.lease)
 			}*/
 
 	return nil

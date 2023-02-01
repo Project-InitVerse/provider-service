@@ -13,6 +13,7 @@ import (
 	sdlutil "github.com/ovrclk/akash/sdl/util"
 )
 
+// NetPol is interface
 type NetPol interface {
 	builderBase
 	Create() ([]*netv1.NetworkPolicy, error)
@@ -25,6 +26,7 @@ type netPol struct {
 
 var _ NetPol = (*netPol)(nil)
 
+// BuildNetPol is function build net pol
 func BuildNetPol(settings Settings, lid ctypes.LeaseID, group *manitypes.Group) NetPol {
 	return &netPol{builder: builder{settings: settings, lid: lid, group: group}}
 }
@@ -43,7 +45,7 @@ func (b *netPol) Create() ([]*netv1.NetworkPolicy, error) { // nolint:golint,unp
 		{
 
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      akashDeploymentPolicyName,
+				Name:      ubicDeploymentPolicyName,
 				Labels:    b.labels(),
 				Namespace: LidNS(b.lid),
 			},
@@ -59,7 +61,7 @@ func (b *netPol) Create() ([]*netv1.NetworkPolicy, error) { // nolint:golint,unp
 							{
 								NamespaceSelector: &metav1.LabelSelector{
 									MatchLabels: map[string]string{
-										akashNetworkNamespace: LidNS(b.lid),
+										ubicNetworkNamespace: LidNS(b.lid),
 									},
 								},
 							},
@@ -88,7 +90,7 @@ func (b *netPol) Create() ([]*netv1.NetworkPolicy, error) { // nolint:golint,unp
 							{
 								NamespaceSelector: &metav1.LabelSelector{
 									MatchLabels: map[string]string{
-										akashNetworkNamespace: LidNS(b.lid),
+										ubicNetworkNamespace: LidNS(b.lid),
 									},
 								},
 							},
@@ -192,7 +194,7 @@ func (b *netPol) Create() ([]*netv1.NetworkPolicy, error) { // nolint:golint,unp
 					},
 					PodSelector: metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							AkashManifestServiceLabelName: serviceName,
+							UbicManifestServiceLabelName: serviceName,
 						},
 					},
 					PolicyTypes: []netv1.PolicyType{
@@ -227,7 +229,7 @@ func (b *netPol) Create() ([]*netv1.NetworkPolicy, error) { // nolint:golint,unp
 					},
 					PodSelector: metav1.LabelSelector{
 						MatchLabels: map[string]string{
-							AkashManifestServiceLabelName: serviceName,
+							UbicManifestServiceLabelName: serviceName,
 						},
 					},
 					PolicyTypes: []netv1.PolicyType{

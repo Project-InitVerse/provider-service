@@ -64,7 +64,7 @@ loop:
 		}
 
 		if idx == len(mani.Spec.Group.Services)-1 {
-			return nil, cluster.ErrExecNoServiceWithName
+			return nil, cluster.ErrUbicExecNoServiceWithName
 		}
 	}
 	// Check that the pod exists
@@ -78,12 +78,12 @@ loop:
 
 	// if no pods are found yet then the deployment hasn't been spun up kubernetes yet
 	if 0 == len(pods.Items) {
-		return nil, cluster.ErrExecServiceNotRunning
+		return nil, cluster.ErrUbicExecServiceNotRunning
 	}
 
 	// check that the requested pod is within the range
 	if podIndex >= uint(len(pods.Items)) {
-		return nil, fmt.Errorf("%w: valid range is [0, %d]", cluster.ErrExecPodIndexOutOfRange, len(pods.Items)-1)
+		return nil, fmt.Errorf("%w: valid range is [0, %d]", cluster.ErrUbicExecPodIndexOutOfRange, len(pods.Items)-1)
 	}
 
 	// sort the pods, since we have no idea what order kubernetes returns them in
@@ -93,9 +93,9 @@ loop:
 	// validate the pod is in a state where it can be connected to
 	switch selectedPod.Status.Phase {
 	case corev1.PodSucceeded:
-		return nil, fmt.Errorf("%w: the service has completed", cluster.ErrExecServiceNotRunning)
+		return nil, fmt.Errorf("%w: the service has completed", cluster.ErrUbicExecServiceNotRunning)
 	case corev1.PodFailed:
-		return nil, fmt.Errorf("%w: the service has failed", cluster.ErrExecServiceNotRunning)
+		return nil, fmt.Errorf("%w: the service has failed", cluster.ErrUbicExecServiceNotRunning)
 	default:
 	}
 
@@ -108,7 +108,7 @@ loop:
 	}
 
 	if !isReady {
-		return nil, fmt.Errorf("%w: the service is not ready", cluster.ErrExecServiceNotRunning)
+		return nil, fmt.Errorf("%w: the service is not ready", cluster.ErrUbicExecServiceNotRunning)
 	}
 
 	podName := selectedPod.Name
@@ -184,12 +184,12 @@ loop:
 	// Some errors are untyped, use string matching to give better answers
 	if strings.Contains(err.Error(), "error executing command in container") {
 		if strings.Contains(err.Error(), "no such file or directory") || strings.Contains(err.Error(), "executable file not found in $PATH") {
-			return nil, cluster.ErrExecCommandDoesNotExist
+			return nil, cluster.ErrUbicExecCommandDoesNotExist
 		}
 		// Don't send the full text of unknown errors back to the user
 		// Log the error here so this can be tracked down somehow in the provider logs at least
 		c.log.Error("command execution failed", "err", err)
-		return nil, cluster.ErrExecCommandExecutionFailed
+		return nil, cluster.ErrUbicExecCommandExecutionFailed
 	}
 
 	return nil, err

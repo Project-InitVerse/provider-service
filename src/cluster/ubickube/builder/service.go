@@ -14,6 +14,7 @@ import (
 	sdlutil "github.com/ovrclk/akash/sdl/util"
 )
 
+// Service is interface
 type Service interface {
 	workloadBase
 	Create() (*corev1.Service, error)
@@ -28,6 +29,7 @@ type service struct {
 
 var _ Service = (*service)(nil)
 
+// BuildService is build service
 func BuildService(log log.Logger, settings Settings, lid ctypes.LeaseID, group *manitypes.Group, mservice *manitypes.Service, requireNodePort bool) Service {
 	return &service{
 		workload:        newWorkloadBuilder(log, settings, lid, group, mservice),
