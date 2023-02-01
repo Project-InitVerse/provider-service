@@ -82,7 +82,6 @@ func (sc *Scan) MainLoop(ctx context.Context, linkClient *util.LinkClient, globa
 		go sc.handleBlockNew(linkClient, blockDataChan, 1000)
 	}
 	oldCount := 0
-
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -398,7 +397,7 @@ func (sc *Scan) handleTransaction(linkClient *util.LinkClient, trxData *interfac
 						}
 					}
 
-				} else if sc.allEvent.CheckEqual(sc.allEvent.UserCancelOrder, oneLog.Topics[0]) {
+				} else if sc.allEvent.CheckEqual(sc.allEvent.OrderEnded, oneLog.Topics[0]) {
 					// Check whether the order is a valid order
 					// put in canBid chan
 					log.Printf("find UserCancelOrder event %v", oneLog)
