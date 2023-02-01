@@ -27,7 +27,6 @@ type ProviderConfig struct {
 	Cert                             string
 	GatewayListenAddress             string
 	ProviderAddress                  string
-	AuthPem                          string
 	DeploymentIngressDomain          string
 	DeploymentIngressExposeLBHosts   bool
 	DeploymentIngressStaticHosts     bool
