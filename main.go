@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -77,9 +76,6 @@ func clusterFunc() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill, os.Interrupt)
 	var certFromFlag io.Reader
-	if val := configData.AuthPem; val != "" {
-		certFromFlag = bytes.NewBufferString(val)
-	}
 
 	kpm, err := util.NewKeyPairManager(common.HexToAddress(configData.ProviderAddress))
 	exsit, _ := kpm.KeyExists()

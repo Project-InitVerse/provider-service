@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ovrclk/akash/sdl"
 	"log"
 	"math/big"
 	ctypes "providerService/src/cluster/types/v1"
@@ -178,7 +179,46 @@ func (bs *Service) initExistDeployment() {
 		}
 	}
 }
+func (bs *Service) validateSdlFile(orderContract string, _CPU, _MEM, _STO *big.Int) bool {
+	sdlFile := bs.getSdlByID(orderContract)
+	sdlObj, err := sdl.Read(sdlFile)
+	if err != nil {
+		log.Println("sdl struct error", err.Error())
+		return false
+	}
+	deployments, err := sdlObj.DeploymentGroups()
+	if err != nil {
+		log.Println("get deployment Group error", err.Error())
+		return false
+	}
+	if len(deployments) != 1 {
+		log.Println("deployment length error", len(deployments))
+		return false
+	}
 
+	sdlCPU := new(big.Int)
+	sdlMem := new(big.Int)
+	sdlSto := new(big.Int)
+	resources := deployments[0].GetResources()
+	for _, resource := range resources {
+		cpu := new(big.Int).SetUint64(resource.Resources.CPU.Units.Value())
+		cpu = cpu.Mul(cpu, new(big.Int).SetInt64(int64(resource.Count)))
+		sdlCPU = sdlCPU.Add(sdlCPU, cpu)
+		mem := new(big.Int).SetUint64(resource.Resources.Memory.Quantity.Value())
+		mem = cpu.Mul(mem, new(big.Int).SetInt64(int64(resource.Count)))
+		sdlMem = sdlMem.Add(sdlMem, mem)
+		sto := new(big.Int)
+		for _, v := range resource.Resources.Storage {
+			sto = sto.Add(sto, new(big.Int).SetUint64(v.Quantity.Value()))
+		}
+		sto = sto.Mul(sto, new(big.Int).SetInt64(int64(resource.Count)))
+		sdlSto = sdlSto.Add(sdlSto, sto)
+	}
+	if _CPU.Cmp(sdlCPU) != 0 || _MEM.Cmp(sdlMem) != 0 || _STO.Cmp(sdlSto) != 0 {
+		return false
+	}
+	return true
+}
 func (bs *Service) initTotalResource() {
 	avaTotal, err := bs.Cluster.GetTotalAvailable()
 	if err != nil {
@@ -569,6 +609,10 @@ func (bs *Service) handleBid(orderInfo *util.NeedBid) {
 	_, ok := bs.KeepResource.Load(strings.ToLower(orderInfo.ContractAddress))
 	if ok {
 		log.Println("This has handled")
+		return
+	}
+	if !bs.validateSdlFile(orderInfo.ContractAddress, orderInfo.CPU, orderInfo.Memory, orderInfo.Storage) {
+		log.Println("validate sdl fail")
 		return
 	}
 	if bs.Total.CPUCount.Cmp(orderInfo.CPU) >= 0 &&

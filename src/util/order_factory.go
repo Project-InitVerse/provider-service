@@ -26,8 +26,21 @@ var (
 	_ = event.NewSubscription
 )
 
+// Order is an auto generated low-level Go binding around an user-defined struct.
+type Order struct {
+	ContractAddress common.Address
+	Owner           common.Address
+	VCpu            *big.Int
+	VMemory         *big.Int
+	VStorage        *big.Int
+	CertKey         *big.Int
+	TrxId           *big.Int
+	State           uint8
+	OrderId         *big.Int
+}
+
 // OrderFactoryABI is the input ABI used to generate the binding from.
-const OrderFactoryABI = "[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"orderNumber\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"order_addr\",\"type\":\"address\"}],\"name\":\"OrderCreation\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"cert_center\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"new_owner\",\"type\":\"address\"}],\"name\":\"changeOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"orderAddress\",\"type\":\"address\"}],\"name\":\"checkIsOrder\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"m_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_cert\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_trx_id\",\"type\":\"uint256\"}],\"name\":\"createOrder\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"orderId\",\"type\":\"uint256\"}],\"name\":\"getOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"}],\"internalType\":\"structOrder\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"providerAddress\",\"type\":\"address\"}],\"name\":\"getProviderAllOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"}],\"internalType\":\"structOrder[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getUnCompleteOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"}],\"internalType\":\"structOrder[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"}],\"name\":\"getUserAllOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"}],\"internalType\":\"structOrder[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"get_minimum_deposit_amount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"max_order_index\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimum_deposit_amount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"new_value\",\"type\":\"uint256\"}],\"name\":\"modify_minimum_deposit_amount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"order_base_map\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"orders\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"provider_address\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"cert_center_\",\"type\":\"address\"}],\"name\":\"set_cert_center\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"factory_addr\",\"type\":\"address\"}],\"name\":\"set_provider_factory\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const OrderFactoryABI = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"new_owner\",\"type\":\"address\"}],\"name\":\"changeOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"m_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_cert\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"m_trx_id\",\"type\":\"uint256\"}],\"name\":\"createOrder\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"new_value\",\"type\":\"uint256\"}],\"name\":\"modify_minimum_deposit_amount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"orderNumber\",\"type\":\"uint256\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"order_addr\",\"type\":\"address\"}],\"name\":\"OrderCreation\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"cert_center_\",\"type\":\"address\"}],\"name\":\"set_cert_center\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"factory_addr\",\"type\":\"address\"}],\"name\":\"set_provider_factory\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"cert_center\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"orderAddress\",\"type\":\"address\"}],\"name\":\"checkIsOrder\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"get_minimum_deposit_amount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"orderId\",\"type\":\"uint256\"}],\"name\":\"getOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint256\",\"name\":\"orderId\",\"type\":\"uint256\"}],\"internalType\":\"structOrder\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"providerAddress\",\"type\":\"address\"}],\"name\":\"getProviderActiveOrderCount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"providerAddress\",\"type\":\"address\"}],\"name\":\"getProviderAllOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint256\",\"name\":\"orderId\",\"type\":\"uint256\"}],\"internalType\":\"structOrder[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getUnCompleteOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint256\",\"name\":\"orderId\",\"type\":\"uint256\"}],\"internalType\":\"structOrder[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"userAddress\",\"type\":\"address\"}],\"name\":\"getUserAllOrder\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"contract_address\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"v_cpu\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_memory\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"v_storage\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"cert_key\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"trx_id\",\"type\":\"uint256\"},{\"internalType\":\"uint8\",\"name\":\"state\",\"type\":\"uint8\"},{\"internalType\":\"uint256\",\"name\":\"orderId\",\"type\":\"uint256\"}],\"internalType\":\"structOrder[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"max_order_index\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minimum_deposit_amount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"order_base_map\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"orders\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"provider_address\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]"
 
 // OrderFactory is an auto generated Go binding around an Ethereum contract.
 type OrderFactory struct {
@@ -235,7 +248,7 @@ func (_OrderFactory *OrderFactoryCallerSession) CheckIsOrder(orderAddress common
 
 // GetOrder is a free data retrieval call binding the contract method 0xd09ef241.
 //
-// Solidity: function getOrder(uint256 orderId) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8))
+// Solidity: function getOrder(uint256 orderId) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256))
 func (_OrderFactory *OrderFactoryCaller) GetOrder(opts *bind.CallOpts, orderId *big.Int) (Order, error) {
 	var out []interface{}
 	err := _OrderFactory.contract.Call(opts, &out, "getOrder", orderId)
@@ -252,21 +265,52 @@ func (_OrderFactory *OrderFactoryCaller) GetOrder(opts *bind.CallOpts, orderId *
 
 // GetOrder is a free data retrieval call binding the contract method 0xd09ef241.
 //
-// Solidity: function getOrder(uint256 orderId) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8))
+// Solidity: function getOrder(uint256 orderId) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256))
 func (_OrderFactory *OrderFactorySession) GetOrder(orderId *big.Int) (Order, error) {
 	return _OrderFactory.Contract.GetOrder(&_OrderFactory.CallOpts, orderId)
 }
 
 // GetOrder is a free data retrieval call binding the contract method 0xd09ef241.
 //
-// Solidity: function getOrder(uint256 orderId) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8))
+// Solidity: function getOrder(uint256 orderId) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256))
 func (_OrderFactory *OrderFactoryCallerSession) GetOrder(orderId *big.Int) (Order, error) {
 	return _OrderFactory.Contract.GetOrder(&_OrderFactory.CallOpts, orderId)
 }
 
+// GetProviderActiveOrderCount is a free data retrieval call binding the contract method 0x34c9ee97.
+//
+// Solidity: function getProviderActiveOrderCount(address providerAddress) view returns(uint256)
+func (_OrderFactory *OrderFactoryCaller) GetProviderActiveOrderCount(opts *bind.CallOpts, providerAddress common.Address) (*big.Int, error) {
+	var out []interface{}
+	err := _OrderFactory.contract.Call(opts, &out, "getProviderActiveOrderCount", providerAddress)
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// GetProviderActiveOrderCount is a free data retrieval call binding the contract method 0x34c9ee97.
+//
+// Solidity: function getProviderActiveOrderCount(address providerAddress) view returns(uint256)
+func (_OrderFactory *OrderFactorySession) GetProviderActiveOrderCount(providerAddress common.Address) (*big.Int, error) {
+	return _OrderFactory.Contract.GetProviderActiveOrderCount(&_OrderFactory.CallOpts, providerAddress)
+}
+
+// GetProviderActiveOrderCount is a free data retrieval call binding the contract method 0x34c9ee97.
+//
+// Solidity: function getProviderActiveOrderCount(address providerAddress) view returns(uint256)
+func (_OrderFactory *OrderFactoryCallerSession) GetProviderActiveOrderCount(providerAddress common.Address) (*big.Int, error) {
+	return _OrderFactory.Contract.GetProviderActiveOrderCount(&_OrderFactory.CallOpts, providerAddress)
+}
+
 // GetProviderAllOrder is a free data retrieval call binding the contract method 0xd35c294f.
 //
-// Solidity: function getProviderAllOrder(address providerAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getProviderAllOrder(address providerAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactoryCaller) GetProviderAllOrder(opts *bind.CallOpts, providerAddress common.Address) ([]Order, error) {
 	var out []interface{}
 	err := _OrderFactory.contract.Call(opts, &out, "getProviderAllOrder", providerAddress)
@@ -283,21 +327,21 @@ func (_OrderFactory *OrderFactoryCaller) GetProviderAllOrder(opts *bind.CallOpts
 
 // GetProviderAllOrder is a free data retrieval call binding the contract method 0xd35c294f.
 //
-// Solidity: function getProviderAllOrder(address providerAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getProviderAllOrder(address providerAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactorySession) GetProviderAllOrder(providerAddress common.Address) ([]Order, error) {
 	return _OrderFactory.Contract.GetProviderAllOrder(&_OrderFactory.CallOpts, providerAddress)
 }
 
 // GetProviderAllOrder is a free data retrieval call binding the contract method 0xd35c294f.
 //
-// Solidity: function getProviderAllOrder(address providerAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getProviderAllOrder(address providerAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactoryCallerSession) GetProviderAllOrder(providerAddress common.Address) ([]Order, error) {
 	return _OrderFactory.Contract.GetProviderAllOrder(&_OrderFactory.CallOpts, providerAddress)
 }
 
 // GetUnCompleteOrder is a free data retrieval call binding the contract method 0x64ba9d9a.
 //
-// Solidity: function getUnCompleteOrder() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getUnCompleteOrder() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactoryCaller) GetUnCompleteOrder(opts *bind.CallOpts) ([]Order, error) {
 	var out []interface{}
 	err := _OrderFactory.contract.Call(opts, &out, "getUnCompleteOrder")
@@ -314,21 +358,21 @@ func (_OrderFactory *OrderFactoryCaller) GetUnCompleteOrder(opts *bind.CallOpts)
 
 // GetUnCompleteOrder is a free data retrieval call binding the contract method 0x64ba9d9a.
 //
-// Solidity: function getUnCompleteOrder() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getUnCompleteOrder() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactorySession) GetUnCompleteOrder() ([]Order, error) {
 	return _OrderFactory.Contract.GetUnCompleteOrder(&_OrderFactory.CallOpts)
 }
 
 // GetUnCompleteOrder is a free data retrieval call binding the contract method 0x64ba9d9a.
 //
-// Solidity: function getUnCompleteOrder() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getUnCompleteOrder() view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactoryCallerSession) GetUnCompleteOrder() ([]Order, error) {
 	return _OrderFactory.Contract.GetUnCompleteOrder(&_OrderFactory.CallOpts)
 }
 
 // GetUserAllOrder is a free data retrieval call binding the contract method 0x3fe8ffee.
 //
-// Solidity: function getUserAllOrder(address userAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getUserAllOrder(address userAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactoryCaller) GetUserAllOrder(opts *bind.CallOpts, userAddress common.Address) ([]Order, error) {
 	var out []interface{}
 	err := _OrderFactory.contract.Call(opts, &out, "getUserAllOrder", userAddress)
@@ -345,14 +389,14 @@ func (_OrderFactory *OrderFactoryCaller) GetUserAllOrder(opts *bind.CallOpts, us
 
 // GetUserAllOrder is a free data retrieval call binding the contract method 0x3fe8ffee.
 //
-// Solidity: function getUserAllOrder(address userAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getUserAllOrder(address userAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactorySession) GetUserAllOrder(userAddress common.Address) ([]Order, error) {
 	return _OrderFactory.Contract.GetUserAllOrder(&_OrderFactory.CallOpts, userAddress)
 }
 
 // GetUserAllOrder is a free data retrieval call binding the contract method 0x3fe8ffee.
 //
-// Solidity: function getUserAllOrder(address userAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8)[])
+// Solidity: function getUserAllOrder(address userAddress) view returns((address,address,uint256,uint256,uint256,uint256,uint256,uint8,uint256)[])
 func (_OrderFactory *OrderFactoryCallerSession) GetUserAllOrder(userAddress common.Address) ([]Order, error) {
 	return _OrderFactory.Contract.GetUserAllOrder(&_OrderFactory.CallOpts, userAddress)
 }
