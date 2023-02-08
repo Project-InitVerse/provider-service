@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"net/http"
 	"strconv"
@@ -71,8 +72,8 @@ func requireOwner() mux.MiddlewareFunc {
 			// at this point client certificate has been validated
 			// so only thing left to do is get account id stored in the CommonName
 			owner := common.HexToAddress(r.TLS.PeerCertificates[0].Subject.CommonName)
-
-			if owner.Hex() != r.TLS.PeerCertificates[0].Subject.CommonName {
+			fmt.Println(owner.Hex(), r.TLS.PeerCertificates[0].Subject.CommonName)
+			if strings.ToLower(owner.Hex()) != strings.ToLower(r.TLS.PeerCertificates[0].Subject.CommonName) {
 				http.Error(w, "invalid certificates", http.StatusUnauthorized)
 				return
 			}

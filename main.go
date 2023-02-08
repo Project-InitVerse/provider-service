@@ -107,7 +107,7 @@ func clusterFunc() {
 		configData,
 
 		configData.GatewayListenAddress,
-		common.HexToAddress(configData.ProviderAddress),
+		common.HexToAddress(configData.ProviderContract),
 		[]tls.Certificate{tlsCert},
 		clusterSettings,
 	)

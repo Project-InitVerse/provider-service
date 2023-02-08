@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/base32"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	uuid "github.com/satori/go.uuid"
 	"strings"
 )
@@ -25,7 +26,7 @@ type LeaseID struct {
 
 // String is function get lease string type
 func (lid LeaseID) String() string {
-	return fmt.Sprintf("%v/%v", lid.OSeq, lid.Provider)
+	return fmt.Sprintf("%v/%v", lid.OSeq, common.HexToAddress(lid.Provider).String())
 }
 
 // LeasePath is function get LeasePath
