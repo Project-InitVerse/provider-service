@@ -10,8 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"log"
 	"math/big"
+	ctypes "providerService/src/cluster/types/v1"
 	"providerService/src/util"
 	"strconv"
+	"strings"
 )
 
 func (bs *Service) getProviderAddr() string {
@@ -455,25 +457,58 @@ func (bs *Service) getOrderLastPayTime(orderContractAddr string) int64 {
 	return lastPayTime
 }
 func (bs *Service) updateResource() {
-	lens := 0
-	bs.KeepResource.Range(func(key, value interface{}) bool {
-		lens++
-		return true
-	})
-	zeroBig := new(big.Int).SetInt64(0)
-	if lens == 0 &&
-		bs.Total.CPUCount.Cmp(zeroBig) == 0 &&
-		bs.Total.MemoryCount.Cmp(zeroBig) == 0 &&
-		bs.Total.StorageCount.Cmp(zeroBig) == 0 {
-		/*
-			avaTotalTemp, err := bs.Cluster.GetTotalAvailable()
-			if err != nil {
-				return
-			}*/
-		totalTemp, err := bs.Cluster.GetTotalAvailable()
-		if err != nil {
+	chainTotalLeft := bs.getTotalResource()
+	totalTemp, err := bs.Cluster.GetTotalAvailable()
+	if err != nil {
+		log.Println("update Resource cluster get error")
+	}
+	orders := bs.getAllProviderServOrders()
+	allActiveLeases := bs.Cluster.GetAllActiveLeases()
+	if len(orders) != 0 {
+		leaseMap := make(map[ctypes.LeaseID]int, len(allActiveLeases))
+		for _, lease := range allActiveLeases {
+			leaseMap[lease] = 0
+		}
+		runningCount := 0
+		allRunningCheck := false
+		for _, order := range orders {
+			if int64(order.State) == orderStatusRunning {
+				runningCount += 1
+				tempLease := ctypes.LeaseID{
+					Owner:    order.Owner.String(),
+					OSeq:     order.OrderId.Uint64(),
+					Provider: common.HexToAddress(bs.Conf.ProviderContract).String(),
+				}
+				if _, ok := leaseMap[tempLease]; !ok {
+					return
+				} else {
+					leaseMap[tempLease] = 1
+				}
+			}
+		}
+		if runningCount != len(allActiveLeases) {
+			return
+		} else {
+			allRunningCheck = true
+		}
+		for _, value := range leaseMap {
+			if value != 1 {
+				allRunningCheck = false
+				break
+			}
+		}
+		if !allRunningCheck {
 			return
 		}
+	} else {
+		if len(allActiveLeases) != 0 {
+			return
+		}
+	}
+
+	if chainTotalLeft.CPUCount.Cmp(new(big.Int).SetUint64(totalTemp.CPU)) != 0 ||
+		chainTotalLeft.MemoryCount.Cmp(new(big.Int).SetUint64(totalTemp.Memory)) != 0 ||
+		chainTotalLeft.StorageCount.Cmp(new(big.Int).SetUint64(totalTemp.StorageEphemeral)) != 0 {
 		providerContractAddr := common.HexToAddress(bs.Conf.ProviderContract)
 		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 		if err != nil {
@@ -519,10 +554,38 @@ func (bs *Service) updateResource() {
 			log.Fatal(err)
 		}
 		fmt.Println("update source tx sent: ", signedTx.Hash().Hex())
+		contractAdders := make([]string, 0)
+		contractTempAddrs := make([]string, 0)
+		bs.KeepResourceTime.Range(func(key any, value any) bool {
+			contractAdders = append(contractAdders, key.(string))
+			return true
+		})
+		for _, value := range contractAdders {
+			bs.KeepResourceTime.Delete(strings.ToLower(value))
+		}
+
+		bs.KeepResource.Range(func(key any, value any) bool {
+			contractTempAddrs = append(contractTempAddrs, key.(string))
+			return true
+		})
+		for _, value := range contractTempAddrs {
+			bs.KeepResource.Delete(strings.ToLower(value))
+		}
+		bs.Total.CPUCount = new(big.Int).SetUint64(totalTemp.CPU)
+		bs.Total.MemoryCount = new(big.Int).SetUint64(totalTemp.Memory)
+		bs.Total.StorageCount = new(big.Int).SetUint64(totalTemp.StorageEphemeral)
 	}
 }
 func (bs *Service) getAllProviderServOrders() []util.Order {
-	orderBase, _ := util.NewOrderFactory(common.HexToAddress(util.GetOrderFactory(bs.Conf)), bs.Client)
-	allProviderOrder, _ := orderBase.GetProviderAllOrder(nil, common.HexToAddress(bs.Conf.ProviderContract))
+	orderBase, err := util.NewOrderFactory(common.HexToAddress(util.GetOrderFactory(bs.Conf)), bs.Client)
+	if err != nil {
+		log.Fatal("getAllProviderServOrders create new order factory fail", err.Error())
+		return nil
+	}
+	allProviderOrder, err := orderBase.GetProviderAllOrder(nil, common.HexToAddress(bs.Conf.ProviderContract))
+	if err != nil {
+		log.Fatal("getAllProviderServOrders get all order fail", err.Error())
+		return nil
+	}
 	return allProviderOrder
 }

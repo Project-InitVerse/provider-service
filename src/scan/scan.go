@@ -21,22 +21,24 @@ import (
 
 // Scan is struct
 type Scan struct {
-	linkClient     *util.LinkClient
-	height         uint
-	MaintainChan   chan util.Order
-	NeedBidChan    chan util.NeedBid
-	NeedCreateChan chan util.NeedCreate
-	UserCancelChan chan util.UserCancelOrder
-	collectThreads int
-	handleThreads  int
-	wg             sync.WaitGroup
-	exitCount      int32
-	allEvent       util.AllEvent
-	Config         *config.ProviderConfig
-	isDone         bool
+	linkClient        *util.LinkClient
+	height            uint
+	MaintainChan      chan util.Order
+	NeedBidChan       chan util.NeedBid
+	NeedCreateChan    chan util.NeedCreate
+	UserCancelChan    chan util.UserCancelOrder
+	NeedChallengeChan chan util.NeedChallenge
+	ChallengeEndChan  chan util.ChallengeEnd
+	collectThreads    int
+	handleThreads     int
+	wg                sync.WaitGroup
+	exitCount         int32
+	allEvent          util.AllEvent
+	Config            *config.ProviderConfig
+	isDone            bool
 }
 
-//QueryExsitMaintainOrder is function
+// QueryExsitMaintainOrder is function
 func (sc *Scan) QueryExsitMaintainOrder() {
 	//todo
 	for {
@@ -67,7 +69,7 @@ func (sc *Scan) QueryExsitMaintainOrder() {
 	}
 }
 
-//MainLoop is service get info from chain
+// MainLoop is service get info from chain
 func (sc *Scan) MainLoop(ctx context.Context, linkClient *util.LinkClient, globalWg *sync.WaitGroup) {
 	globalWg.Add(1)
 	defer globalWg.Done()
@@ -122,7 +124,7 @@ func (sc *Scan) quit() {
 
 }
 
-//InitScan init scan service
+// InitScan init scan service
 func (sc *Scan) InitScan(pConfig *config.ProviderConfig) {
 	sc.allEvent = util.AllEvent{}
 	sc.allEvent.Init()
@@ -414,8 +416,24 @@ func (sc *Scan) handleTransaction(linkClient *util.LinkClient, trxData *interfac
 						log.Printf("insert UserCancelOrder event %v", *userCancel)
 					}
 
+				} else if sc.allEvent.CheckEqual(sc.allEvent.ChallengeCreate, oneLog.Topics[0]) {
+					contractAddr := oneLog.Address
+					if common.HexToAddress(contractAddr) == util.ValidatorFactoryAddress {
+						needChallenge := new(util.NeedChallenge)
+						needChallenge.Owner = common.HexToAddress(oneLog.Topics[1])
+						needChallenge.SeedHash = util.GetBigInt(oneLog.Data, 16)
+						sc.NeedChallengeChan <- *needChallenge
+					}
 				}
 
+			} else if sc.allEvent.CheckEqual(sc.allEvent.ChallengeEnd, oneLog.Topics[0]) {
+				contractAddr := oneLog.Address
+				if common.HexToAddress(contractAddr) == util.ValidatorFactoryAddress {
+					challengeEnd := new(util.ChallengeEnd)
+					challengeEnd.Owner = common.HexToAddress(oneLog.Topics[1])
+
+					sc.ChallengeEndChan <- *challengeEnd
+				}
 			}
 
 		}

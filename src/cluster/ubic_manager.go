@@ -33,11 +33,11 @@ const ubicUncleanShutdownGracePeriod = 30 * time.Second
 type ubicDeploymentState string
 
 var (
-	/*
-		ubicDeploymentCounter = promauto.NewCounterVec(prometheus.CounterOpts{
-			Name: "provider_deployment",
-		}, []string{"action", "result"})
 
+	//ubicDeploymentCounter = promauto.NewCounterVec(prometheus.CounterOpts{
+	//	Name: "provider_deployment",
+	//}, []string{"action", "result"})
+	/*
 		ubicMonitorCounter = promauto.NewCounterVec(prometheus.CounterOpts{
 			Name: "provider_deployment_monitor",
 		}, []string{"action"})
@@ -380,12 +380,12 @@ func (dm *UbicDeploymentManager) doDeploy(ctx context.Context) ([]string, []stri
 	// Don't use a context tied to the lifecycle, as we don't want to cancel Kubernetes operations
 	deployCtx := util.ApplyToContext(context.Background(), dm.config.ClusterSettings)
 
-	err = dm.client.Deploy(deployCtx, dm.lease, dm.mgroup)
+	dm.client.Deploy(deployCtx, dm.lease, dm.mgroup)
 	//label := "success"
 	//if err != nil {
 	//	label = "fail"
 	//}
-	//deploymentCounter.WithLabelValues("deploy", label).Inc()
+	//ubicDeploymentCounter.WithLabelValues("deploy", label).Inc()
 
 	// Figure out what hostnames to declare
 	blockedHostnames := make(map[string]struct{})

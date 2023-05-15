@@ -34,22 +34,23 @@ type resourceStorage struct {
 
 // Service is bid service
 type Service struct {
-	BidChan          <-chan util.NeedBid
-	BidFinalChan     <-chan util.NeedCreate
-	OrderFinish      <-chan util.UserCancelOrder
-	BidTimeout       <-chan time.Time
-	SubMitTimeOut    <-chan time.Time
-	Total            resourceStorage
-	Client           *ethclient.Client
-	Conf             *config.ProviderConfig
-	Cluster          *ubic_cluster.UbicService
-	KeepResource     sync.Map
-	KeepResourceTime sync.Map
-	MutexRw          *sync.RWMutex
-	Abi              map[string]abi.ABI
-	Ctx              context.Context
-	WgBid            *sync.WaitGroup
-	LastPayTime      int64
+	BidChan             <-chan util.NeedBid
+	BidFinalChan        <-chan util.NeedCreate
+	OrderFinish         <-chan util.UserCancelOrder
+	BidTimeout          <-chan time.Time
+	SubMitTimeOut       <-chan time.Time
+	UpdateSourceTimeout <-chan time.Time
+	Total               resourceStorage
+	Client              *ethclient.Client
+	Conf                *config.ProviderConfig
+	Cluster             *ubic_cluster.UbicService
+	KeepResource        sync.Map
+	KeepResourceTime    sync.Map
+	MutexRw             *sync.RWMutex
+	Abi                 map[string]abi.ABI
+	Ctx                 context.Context
+	WgBid               *sync.WaitGroup
+	LastPayTime         int64
 }
 
 // Init is service initialize function
@@ -73,6 +74,7 @@ func (bs *Service) Init(ctx context.Context, config *config.ProviderConfig,
 	bs.WgBid = new(sync.WaitGroup)
 	bs.LastPayTime = time.Now().Unix()
 	bs.initExistDeployment()
+	bs.UpdateSourceTimeout = time.After(30 * time.Second)
 }
 
 func (bs *Service) initExistDeployment() {
@@ -290,6 +292,9 @@ func (bs *Service) handleRecoverResource() {
 	}
 	bs.LastPayTime = time.Now().Unix()
 }
+func (bs *Service) HandleChallenge(challenge *util.NeedChallenge) {
+
+}
 
 // Run is start bid service
 func (bs *Service) Run(wg *sync.WaitGroup) {
@@ -310,6 +315,9 @@ loop:
 		case <-bs.SubMitTimeOut:
 			go bs.handleSubmitURI()
 			bs.SubMitTimeOut = time.After(30 * time.Second)
+		case <-bs.UpdateSourceTimeout:
+			go bs.updateResource()
+			bs.UpdateSourceTimeout = time.After(6 * time.Hour)
 		case <-bs.Ctx.Done():
 			bs.WgBid.Wait()
 			log.Println("bid service exit")

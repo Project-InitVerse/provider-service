@@ -4,8 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/base64"
-	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"providerService/src/config"
@@ -51,25 +49,25 @@ func NewServerTLSConfig(ctx context.Context, certs []tls.Certificate, cConfig *c
 				}
 
 				// 3. look up certificate on chain
-				fmt.Println("cert raw", base64.StdEncoding.EncodeToString(cert.Raw))
+				//fmt.Println("cert raw", base64.StdEncoding.EncodeToString(cert.Raw))
 				//Todo open chain check cert
 				conn, err := ethclient.Dial(cConfig.NodeURL)
-				if false {
-					defer conn.Close()
-					certHandle, err := util.NewCert(common.HexToAddress(cConfig.Cert), conn)
-					if err != nil {
+				//if false {
+				defer conn.Close()
+				certHandle, err := util.NewCert(common.HexToAddress(cConfig.Cert), conn)
+				if err != nil {
 
-						return errors.Wrap(err, "tls: Unable to connect to the chain")
-					}
-					certState, err := certHandle.UserCertState(nil, owner, string(cert.Raw))
-					if err != nil {
-						return errors.Wrap(err, "chain: Unable to connect to the chain")
-					}
-					if certState != 1 {
-						return errors.New("tls: attempt to use non-existing or revoked certificate")
-					}
-
+					return errors.Wrap(err, "tls: Unable to connect to the chain")
 				}
+				certState, err := certHandle.UserCertState(nil, owner, string(cert.Raw))
+				if err != nil {
+					return errors.Wrap(err, "chain: Unable to connect to the chain")
+				}
+				if certState != 1 {
+					return errors.New("tls: attempt to use non-existing or revoked certificate")
+				}
+
+				//}
 				//if err != nil {
 				//
 				//	return errors.Wrap(err, "chain: Unable to connect to the chain")
