@@ -8,7 +8,7 @@ This folder contains the Ubic Provider Daemon. This piece of software listens to
 
 ### [`bid`](./bid)
 
-The bid engine queries for any existing orders on chain, and based on the on-chain provider configuration, places bids on behalf of the configured provider based on configured selling prices for resources. The daemon listens for changes in the configuration so users can use automation tooling to dynamically change the prices they are charging w/o restarting the daemon.
+The bid engine queries for any existing orders on chain, and based on the on-chain provider configuration, places bids on behalf of the configured provider based on configured selling prices for resources. The daemon listens for changes in the configuration so users can use automation tooling to dynamically change the prices they are charging w/o restarting the daemon.Handle on chain contract events and complete POR challenges
 
 ### [`cluster`](./cluster)
 
@@ -34,14 +34,15 @@ The following content config the template
   "MemoryPrice": "10000000", -- quote precision bit value, chain accuracy of 18 bits
   "StoragePrice": "1000000", -- quote precision bit value, chain accuracy of 18 bits
   "SecretKey": "you private key", -- Please enter your private key
-  "ProviderAddress": "0x624199661664b9EF607c02D934EA25701076C3B8",
-  "OrderFactory": "0x495621f53EB82371dA50A256b5637421D3a79776",
-  "ProviderContract": "0x725440598D4fE96523D7491FD198fd6D4f5884e5",
-  "ProviderFactoryContract": "0xaf7340aDf32Da07c167e93512be2719421f4a27b",
+  "ProviderAddress": "0x624199661664b9EF607c02D934EA25701076C3B8",-- Please enter your address
+  "OrderFactory": "0x495621f53EB82371dA50A256b5637421D3a79776",-- Please enter orderfactory address
+  "ProviderContract": "0x725440598D4fE96523D7491FD198fd6D4f5884e5",-- Please enter providercontract address
+  "ProviderFactoryContract": "0x000000000000000000000000000000000000C003",
+  "ValidatorFactoryContract": "0x000000000000000000000000000000000000C002",
   "BidTimeOut": 600,
   "NameSpace": "ubic-service",
   "K8sConfigPath": "./admin.conf", -- Enter the access configuration file path of the k8s cluster
-  "Cert": "0xB3ce612Cf77D4e2F7CD6dea0651C90bD0295b2b3",
+  "Cert": "0xB3ce612Cf77D4e2F7CD6dea0651C90bD0295b2b3",-- Please enter cert address
   "GatewayListenAddress": "0.0.0.0:8443",
   "DeploymentIngressDomain":"ingress.daemon.com", -- Configure the domain name you intend for the user
   "DeploymentIngressExposeLBHosts":"false",

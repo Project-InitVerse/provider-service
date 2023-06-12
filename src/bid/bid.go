@@ -3,6 +3,7 @@ package bid
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -20,10 +21,14 @@ import (
 )
 
 var (
-	orderStatusQuoting int64 = 1
-	orderStatusRunning int64 = 2
-	orderStatusEnded   int64 = 3
-	orderPayInt        int64 = 3600
+	orderStatusQuoting   int64  = 1
+	orderStatusRunning   int64  = 2
+	orderStatusEnded     int64  = 3
+	orderPayInt          int64  = 3600
+	challengeLids        string = "challengeLids"
+	challengeState       string = "challengeState"
+	challengeProvider    string = "challengeProvider"
+	challengeCreateState uint64 = 1
 )
 
 type resourceStorage struct {
@@ -37,15 +42,19 @@ type Service struct {
 	BidChan             <-chan util.NeedBid
 	BidFinalChan        <-chan util.NeedCreate
 	OrderFinish         <-chan util.UserCancelOrder
+	BidChallenge        <-chan util.NeedChallenge
+	ChallengeFinal      <-chan util.ChallengeEnd
 	BidTimeout          <-chan time.Time
 	SubMitTimeOut       <-chan time.Time
 	UpdateSourceTimeout <-chan time.Time
+	EndChallengeTimeout <-chan time.Time
 	Total               resourceStorage
 	Client              *ethclient.Client
 	Conf                *config.ProviderConfig
 	Cluster             *ubic_cluster.UbicService
 	KeepResource        sync.Map
 	KeepResourceTime    sync.Map
+	ChallengeLidsMap    sync.Map
 	MutexRw             *sync.RWMutex
 	Abi                 map[string]abi.ABI
 	Ctx                 context.Context
@@ -58,11 +67,15 @@ func (bs *Service) Init(ctx context.Context, config *config.ProviderConfig,
 	bidChan <-chan util.NeedBid,
 	bidFinal <-chan util.NeedCreate,
 	orderFinish <-chan util.UserCancelOrder,
+	bidChallenge <-chan util.NeedChallenge,
+	challengeFinal <-chan util.ChallengeEnd,
 	cluster *ubic_cluster.UbicService) {
 	bs.Client, _ = ethclient.Dial(config.NodeURL)
 	bs.Conf = config
 	bs.BidFinalChan = bidFinal
 	bs.BidChan = bidChan
+	bs.BidChallenge = bidChallenge
+	bs.ChallengeFinal = challengeFinal
 	bs.OrderFinish = orderFinish
 	bs.MutexRw = new(sync.RWMutex)
 	bs.Abi = GetInteractiveABI()
@@ -74,44 +87,79 @@ func (bs *Service) Init(ctx context.Context, config *config.ProviderConfig,
 	bs.WgBid = new(sync.WaitGroup)
 	bs.LastPayTime = time.Now().Unix()
 	bs.initExistDeployment()
-	bs.UpdateSourceTimeout = time.After(30 * time.Second)
+	bs.UpdateSourceTimeout = time.After(10 * time.Second)
+
 }
 
 func (bs *Service) initExistDeployment() {
 	allActiveLeases := bs.Cluster.GetAllActiveLeases()
-	orderInChain := bs.getAllProviderServOrders()
-	leaseLocal := make(map[string]int, 0)
-	for _, lease := range allActiveLeases {
-		state, orderAddr := bs.getOrderState(lease.OSeq)
-		fmt.Println("initExistDeployment", lease, state, orderAddr)
-		leaseLocal[strings.ToLower(orderAddr)] = 1
-		if state == orderStatusRunning {
-			_, ok := bs.KeepResource.Load(strings.ToLower(orderAddr))
-			if !ok {
-				bs.KeepResource.Store(strings.ToLower(orderAddr), resourceStorage{
-					CPUCount:     big.NewInt(0),
-					MemoryCount:  big.NewInt(0),
-					StorageCount: big.NewInt(0),
-				})
-			}
-		} else if state == orderStatusEnded {
-			bs.Cluster.CloseManager(lease)
-		}
+	orderInChain, err := bs.getAllProviderServOrders()
+	if err != nil {
+		log.Fatal("initExistDeployment getAllProviderServOrders error", err.Error())
 	}
+	leaseLocal := make(map[string]int, 0)
+	leaseChallenge := make([]ctypes.LeaseID, 0)
+	for _, lease := range allActiveLeases {
+		if lease.Provider == challengeProvider {
+			leaseChallenge = append(leaseChallenge, lease)
+		} else {
+			state, orderAddr, err := bs.getOrderState(lease.OSeq)
+			if err != nil {
+				log.Println("initExistDeployment get order state error", err.Error())
+				continue
+			}
+			log.Println("initExistDeployment", lease, state, orderAddr)
+			leaseLocal[strings.ToLower(orderAddr)] = 1
+			if state == orderStatusRunning {
+				_, ok := bs.KeepResource.Load(strings.ToLower(orderAddr))
+				if !ok {
+					bs.KeepResource.Store(strings.ToLower(orderAddr), resourceStorage{
+						CPUCount:     big.NewInt(0),
+						MemoryCount:  big.NewInt(0),
+						StorageCount: big.NewInt(0),
+					})
+				}
+			} else if state == orderStatusEnded {
+				bs.Cluster.CloseManager(lease)
+			}
+		}
+
+	}
+	if len(leaseChallenge) > 0 {
+		bs.ChallengeLidsMap.Store(challengeLids, leaseChallenge)
+		bs.ChallengeLidsMap.Store(challengeState, true)
+		timeout := bs.getChallengeTimeout()
+		bs.EndChallengeTimeout = time.After(time.Duration(timeout) * time.Second)
+	} else {
+		bs.ChallengeLidsMap.Store(challengeState, false)
+	}
+
 	for _, orderSingle := range orderInChain {
 		if _, ok := leaseLocal[strings.ToLower(orderSingle.ContractAddress.String())]; ok {
 			continue
 		}
 		if int64(orderSingle.State) == orderStatusRunning {
 			sdlFile := bs.getSdlByID(orderSingle.ContractAddress.String())
-			owner := bs.getOwner(orderSingle.ContractAddress.String())
-			index := bs.getOrderIndex(orderSingle.ContractAddress.String())
+			owner, err := bs.getOwner(orderSingle.ContractAddress.String())
+			if err != nil {
+				log.Println("initExistDeployment:get order owner error", err.Error())
+				continue
+			}
+			index, err := bs.getOrderIndex(orderSingle.ContractAddress.String())
+			if err != nil {
+				log.Println("initExistDeployment:getOrderIndex error", err.Error())
+				continue
+			}
 			lid := ctypes.LeaseID{
 				Owner:    owner.String(),
 				OSeq:     index,
 				Provider: bs.getProviderAddr(),
 			}
-			uri, _ := bs.Cluster.NewUbicDeployManager(lid, sdlFile)
+			uri, err := bs.Cluster.NewUbicDeployManager(lid, sdlFile)
+			if err != nil {
+				log.Println("initExistDeployment:create deployment error", err.Error())
+				continue
+			}
 			bs.submitURI(orderSingle.ContractAddress.String(), uri)
 		}
 	}
@@ -168,10 +216,17 @@ func (bs *Service) initTotalResource() {
 }
 func (bs *Service) handleBid(orderInfo *util.NeedBid) {
 	log.Println("in Handle bid")
+	whetherChallenge, ok := bs.ChallengeLidsMap.Load(challengeState)
+	if ok {
+		if whetherChallenge.(bool) {
+			log.Println("challenge in handle bid")
+			return
+		}
+	}
 	log.Println(orderInfo.ContractAddress)
 	bs.WgBid.Add(1)
 	defer bs.WgBid.Done()
-	_, ok := bs.KeepResource.Load(strings.ToLower(orderInfo.ContractAddress))
+	_, ok = bs.KeepResource.Load(strings.ToLower(orderInfo.ContractAddress))
 	if ok {
 		log.Println("This has handled")
 		return
@@ -192,13 +247,21 @@ func (bs *Service) handleBid(orderInfo *util.NeedBid) {
 }
 func (bs *Service) handleBidFinal(bidFinalInfo *util.NeedCreate) {
 	log.Println("in handle bid final", bidFinalInfo.ContractAddress)
+	whetherChallenge, ok := bs.ChallengeLidsMap.Load(challengeState)
+	if ok {
+		if whetherChallenge.(bool) {
+			log.Println("challenge in handle bid final")
+			return
+		}
+	}
 	bs.WgBid.Add(1)
 	defer bs.WgBid.Done()
 	privateKey, _ := crypto.HexToECDSA(bs.Conf.SecretKey)
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+		log.Println("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+		return
 	}
 	providerAddr := crypto.PubkeyToAddress(*publicKeyECDSA)
 	resource, ok := bs.KeepResource.Load(strings.ToLower(bidFinalInfo.ContractAddress))
@@ -211,21 +274,36 @@ func (bs *Service) handleBidFinal(bidFinalInfo *util.NeedCreate) {
 		}
 	} else {
 		if !ok {
-			orderSource := bs.getOrderCount(bidFinalInfo.ContractAddress)
+			orderSource, err := bs.getOrderCount(bidFinalInfo.ContractAddress)
+			if err != nil {
+				log.Println("handleBidFinal:getOrderCount error", err.Error())
+				return
+			}
 			bs.KeepResource.Store(strings.ToLower(bidFinalInfo.ContractAddress), orderSource)
 			bs.handleResource(orderSource, false)
 		}
-		log.Println(bs.Total)
 		sdlFile := bs.getSdlByID(bidFinalInfo.ContractAddress)
-		owner := bs.getOwner(bidFinalInfo.ContractAddress)
-		index := bs.getOrderIndex(bidFinalInfo.ContractAddress)
-		fmt.Println(owner, index, bidFinalInfo.Provider.String())
+		owner, err := bs.getOwner(bidFinalInfo.ContractAddress)
+		if err != nil {
+			log.Println("handleBidFinal:get order owner error", err.Error())
+			return
+		}
+		index, err := bs.getOrderIndex(bidFinalInfo.ContractAddress)
+		if err != nil {
+			log.Println("handleBidFinal:getOrderIndex error", err.Error())
+			return
+		}
+		log.Println(owner, index, bidFinalInfo.Provider.String())
 		lid := ctypes.LeaseID{
 			Owner:    owner.String(),
 			OSeq:     index,
 			Provider: bidFinalInfo.Provider.String(),
 		}
-		uri, _ := bs.Cluster.NewUbicDeployManager(lid, sdlFile)
+		uri, err := bs.Cluster.NewUbicDeployManager(lid, sdlFile)
+		if err != nil {
+			log.Println("handleBidFinal:create deployment error", err.Error())
+			return
+		}
 		bs.submitURI(bidFinalInfo.ContractAddress, uri)
 	}
 }
@@ -237,8 +315,16 @@ func (bs *Service) handleOrderFinish(orderFinishInfo *util.UserCancelOrder) {
 	if ok {
 		bs.handleResource(resource.(resourceStorage), true)
 	}
-	owner := bs.getOwner(orderFinishInfo.ContractAddress.String())
-	index := bs.getOrderIndex(orderFinishInfo.ContractAddress.String())
+	owner, err := bs.getOwner(orderFinishInfo.ContractAddress.String())
+	if err != nil {
+		log.Println("handleOrderFinish:get order owner error", err.Error())
+		return
+	}
+	index, err := bs.getOrderIndex(orderFinishInfo.ContractAddress.String())
+	if err != nil {
+		log.Println("handleOrderFinish:getOrderIndex error", err.Error())
+		return
+	}
 	provider := bs.getProviderAddr()
 	lid := ctypes.LeaseID{
 		Owner:    owner.String(),
@@ -255,11 +341,19 @@ func (bs *Service) handleOrderFinish(orderFinishInfo *util.UserCancelOrder) {
 	}
 }
 func (bs *Service) handleSubmitURI() {
+	//log.Println("in handle submit URL")
+	//bs.changeProviderInfo()
 	allActiveLeases := bs.Cluster.GetAllActiveLeases()
 	for _, lease := range allActiveLeases {
-		_, orderAddr := bs.getOrderState(lease.OSeq)
-		uri := bs.Cluster.GetURI(lease)
-		bs.submitURI(orderAddr, uri)
+		if lease.Provider != challengeProvider {
+			_, orderAddr, err := bs.getOrderState(lease.OSeq)
+			if err != nil {
+				log.Println("handleSubmitURI: getOrderState error,", err.Error())
+				continue
+			}
+			uri := bs.Cluster.GetURI(lease)
+			bs.submitURI(orderAddr, uri)
+		}
 	}
 }
 func (bs *Service) handleRecoverResource() {
@@ -282,18 +376,128 @@ func (bs *Service) handleRecoverResource() {
 	}
 	allActiveLeases := bs.Cluster.GetAllActiveLeases()
 	for _, lease := range allActiveLeases {
-		fmt.Println(lease)
-		_, orderAddr := bs.getOrderState(lease.OSeq)
-		lastTime := bs.getOrderLastPayTime(orderAddr)
-		fmt.Println("last time is ", lastTime)
-		if lastTime+orderPayInt < time.Now().Unix() {
-			bs.payBill(orderAddr)
+		log.Println(lease)
+		if lease.Provider != challengeProvider {
+			_, orderAddr, err := bs.getOrderState(lease.OSeq)
+			if err != nil {
+				log.Println("handleRecoverResource: getOrderState error,", err.Error())
+				continue
+			}
+			providerAddr, err := bs.getOrderChosenProvider(orderAddr)
+			if err != nil {
+				log.Println("handleRecoverResource getOrderChosenProvider", err.Error())
+				continue
+			}
+			if providerAddr.String() != bs.Conf.ProviderContract {
+				log.Println("not my deployment")
+				bs.Cluster.CloseManager(lease)
+				continue
+			}
+			lastTime, err := bs.getOrderLastPayTime(orderAddr)
+			if err != nil {
+				log.Println("handleRecoverResource getOrderChosenProvider", err.Error())
+				continue
+			}
+			log.Println("last time is ", lastTime)
+			if lastTime+orderPayInt < time.Now().Unix() {
+				bs.payBill(orderAddr)
+			}
 		}
 	}
 	bs.LastPayTime = time.Now().Unix()
 }
-func (bs *Service) HandleChallenge(challenge *util.NeedChallenge) {
+func (bs *Service) handleChallenge(challenge *util.NeedChallenge) {
+	log.Println("in handle challenge")
+	if challenge.Owner.String() != bs.Conf.ProviderAddress {
+		log.Println("not my challenge")
+		return
+	}
+	whetherChallenge, ok := bs.ChallengeLidsMap.Load(challengeState)
+	if ok {
+		if whetherChallenge.(bool) {
+			log.Println("has in challenge state")
+			return
+		}
+	}
+	info := bs.getChallengeInfo(challenge.Owner.String())
+	if info != nil {
+		if info.Index.Cmp(challenge.Index) != 0 {
+			log.Println("not this turn challenge")
+			return
+		}
+		if info.Url == "" || uint64(info.State) != challengeCreateState {
+			log.Println("no info in challenge")
+			return
+		}
+		//verify seed
+		bs.ChallengeLidsMap.Store(challengeState, true)
+		seedResponse, porCount := bs.getSeedFromValidatorMidWare(info.Md5Seed, info.Provider.String(), info.Url)
+		if seedResponse == nil {
+			log.Println("connect mid ware fail")
+			bs.ChallengeLidsMap.Store(challengeState, false)
+			return
+		}
+		seedBytes := [8]byte{}
+		binary.LittleEndian.PutUint64(seedBytes[:], seedResponse.Seed)
+		seedHash := crypto.Keccak256(seedBytes[:])
 
+		if new(big.Int).SetBytes(seedHash).Cmp(info.Md5Seed) != 0 {
+			log.Println("seed was not correct")
+			bs.ChallengeLidsMap.Store(challengeState, false)
+			return
+		}
+
+		challengeSdl := bs.getChallengeSdl()
+		lids, err := bs.Cluster.NewChallengeDeployManager(challengeSdl, porCount, seedResponse.Seed, seedResponse.TaskID, info.Url)
+		if err != nil {
+			log.Println("create challengeDeploy fail")
+			bs.ChallengeLidsMap.Store(challengeState, false)
+			return
+		}
+
+		bs.ChallengeLidsMap.Store(challengeLids, lids)
+		timeout := bs.getChallengeTimeout()
+		bs.EndChallengeTimeout = time.After(time.Duration(timeout) * time.Second)
+	}
+}
+func (bs *Service) handleChallengeEnd(challenge *util.ChallengeEnd) {
+	log.Println("in handle challenge end")
+	if challenge.Owner.String() != bs.Conf.ProviderAddress {
+		log.Println("not my challenge")
+		return
+	}
+	info := bs.getChallengeInfo(challenge.Owner.String())
+	if info != nil {
+		if info.Index.Cmp(challenge.Index) != 0 {
+			log.Println("not this turn challenge end")
+			return
+		}
+		lids, ok := bs.ChallengeLidsMap.Load(challengeLids)
+		if ok {
+			for _, lid := range lids.([]ctypes.LeaseID) {
+				bs.Cluster.CloseManager(lid)
+			}
+			bs.ChallengeLidsMap.Delete(challengeLids)
+		}
+		bs.ChallengeLidsMap.Store(challengeState, false)
+	}
+}
+func (bs *Service) endChallengeTime() {
+	log.Println("in handle end challenge time")
+	info := bs.getChallengeInfo(bs.Conf.ProviderAddress)
+	if info != nil {
+		if uint64(info.State) == challengeCreateState {
+			lids, ok := bs.ChallengeLidsMap.Load(challengeLids)
+			if ok {
+				for _, lid := range lids.([]ctypes.LeaseID) {
+					bs.Cluster.CloseManager(lid)
+				}
+				bs.ChallengeLidsMap.Delete(challengeLids)
+			}
+			bs.ChallengeLidsMap.Store("challenge", false)
+			bs.endChallenge()
+		}
+	}
 }
 
 // Run is start bid service
@@ -317,7 +521,13 @@ loop:
 			bs.SubMitTimeOut = time.After(30 * time.Second)
 		case <-bs.UpdateSourceTimeout:
 			go bs.updateResource()
-			bs.UpdateSourceTimeout = time.After(6 * time.Hour)
+			bs.UpdateSourceTimeout = time.After(300 * time.Second)
+		case challengeFinal := <-bs.ChallengeFinal:
+			go bs.handleChallengeEnd(&challengeFinal)
+		case challenge := <-bs.BidChallenge:
+			go bs.handleChallenge(&challenge)
+		case <-bs.EndChallengeTimeout:
+			go bs.endChallengeTime()
 		case <-bs.Ctx.Done():
 			bs.WgBid.Wait()
 			log.Println("bid service exit")

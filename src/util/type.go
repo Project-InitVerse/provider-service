@@ -321,6 +321,7 @@ type NeedCreate struct {
 type NeedChallenge struct {
 	Owner    common.Address `json:"owner"`
 	SeedHash *big.Int       `json:"seed_hash"`
+	Index    *big.Int       `json:"index"`
 }
 
 // UserCancelOrder stores contract addr
@@ -331,6 +332,7 @@ type UserCancelOrder struct {
 // ChallengeEnd is struct
 type ChallengeEnd struct {
 	Owner common.Address `json:"owner"`
+	Index *big.Int       `json:"index"`
 }
 
 // TransactionHandled is struct

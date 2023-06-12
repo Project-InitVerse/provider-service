@@ -23,8 +23,8 @@ func (ae *AllEvent) Init() {
 	ae.UserCancelOrder = crypto.Keccak256Hash([]byte("UserCancelOrder()")).String()
 	ae.CanQuote = crypto.Keccak256Hash([]byte("CanQuote()")).String()
 	ae.OrderEnded = crypto.Keccak256Hash([]byte("OrderEnded()")).String()
-	ae.ChallengeCreate = crypto.Keccak256Hash([]byte("ChallengeCreate(address,uint256)")).String()
-	ae.ChallengeEnd = crypto.Keccak256Hash([]byte("NeedChallenge()")).String()
+	ae.ChallengeCreate = crypto.Keccak256Hash([]byte("ChallengeCreate(address,uint256,uint256)")).String()
+	ae.ChallengeEnd = crypto.Keccak256Hash([]byte("ChallengeEnd(address,uint256)")).String()
 
 }
 

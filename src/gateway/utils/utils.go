@@ -4,10 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"providerService/src/config"
 	"providerService/src/util"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -59,11 +61,27 @@ func NewServerTLSConfig(ctx context.Context, certs []tls.Certificate, cConfig *c
 
 					return errors.Wrap(err, "tls: Unable to connect to the chain")
 				}
-				certState, err := certHandle.UserCertState(nil, owner, string(cert.Raw))
-				if err != nil {
-					return errors.Wrap(err, "chain: Unable to connect to the chain")
+				pemBlock := &pem.Block{
+					Type:  "CERTIFICATE",
+					Bytes: cert.Raw,
 				}
-				if certState != 1 {
+				pemData := pem.EncodeToMemory(pemBlock)
+				certStr := string(pemData)
+				if strings.Count(string(pemData), "\r\n") == 0 {
+					certStr = strings.Replace(string(pemData), "\n", "\r\n", -1)
+				}
+
+				certState, err := certHandle.UserCertState(nil, owner, certStr)
+				var certState1 uint8
+				if err != nil {
+					certStr = strings.Replace(string(pemData), "\r\n", "\n", -1)
+					certState1, err = certHandle.UserCertState(nil, owner, certStr)
+					if err != nil {
+						return errors.Wrap(err, "chain: Unable to connect to the chain")
+					}
+				}
+
+				if !(certState == 1 || certState1 == 1) {
 					return errors.New("tls: attempt to use non-existing or revoked certificate")
 				}
 

@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ovrclk/akash/sdl"
+	"github.com/pkg/errors"
 	"github.com/tendermint/tendermint/libs/log"
 	"providerService/src/cluster"
 	ctypes "providerService/src/cluster/types/v1"
 	"providerService/src/cluster/ubickube"
 	cmdutil "providerService/src/cmd/provider-services/cmd/util"
 	"providerService/src/config"
+	"strconv"
 	"sync"
 )
 
@@ -71,15 +73,80 @@ func (us *UbicService) LoadExistDeployManager() {
 
 }
 
+// NewChallengeDeployManager create new deployment for POR
+func (us *UbicService) NewChallengeDeployManager(
+	sdlSteam []byte,
+	challengeCount int64,
+	seed uint64, _taskID int64, commitURL string) ([]ctypes.LeaseID, error) {
+	sdlFile, err := sdl.Read(sdlSteam)
+	if err != nil {
+		fmt.Println("exit in sdl conv", err.Error())
+		return nil, err
+	}
+	groups, _ := sdlFile.Manifest()
+	if len(groups) != 1 {
+		return nil, errors.New("NewChallengeDeployManager:group not support over 1")
+	}
+	ret := make([]ctypes.LeaseID, 0)
+	for i := int64(0); i < challengeCount; i++ {
+		groupsIn, _ := sdlFile.Manifest()
+		lidChallenge := ctypes.LeaseID{
+			Owner:    "Owner",
+			OSeq:     uint64(i),
+			Provider: "challengeProvider",
+		}
+		for _, group := range groupsIn {
+			for key := range group.Services {
+				fmt.Println("enter lease id ", strconv.FormatUint(seed+uint64(i), 10))
+				porSeed := "por_seed=" + strconv.FormatUint(seed+uint64(i), 10)
+				commit := "commit_url=" + commitURL + ""
+				taskID := "task_id=" + strconv.FormatInt(_taskID, 10)
+				group.Services[key].Env = append(group.Services[key].Env, porSeed)
+				group.Services[key].Env = append(group.Services[key].Env, commit)
+				group.Services[key].Env = append(group.Services[key].Env, taskID)
+				fmt.Println(group.Services)
+			}
+
+			ret = append(ret, lidChallenge)
+			deployManager := cluster.NewUbicDeploymentManager(context.Background(),
+				us.UbicKubeClient,
+				lidChallenge,
+				us.UbicLog,
+				&group,
+				us.Hostnames,
+				us.Config,
+				true)
+			us.Managers[lidChallenge] = deployManager
+			/*
+				ret := make(map[string]interface{}, 0)
+				exist, groups, _ := us.UbicKubeClient.GetManifestGroup(context.Background(), lidChallenge)
+				if exist {
+					for _, service := range groups.Services {
+						s, _ := us.UbicKubeClient.ServiceStatus(context.Background(), lidChallenge, service.Name)
+						ret[service.Name] = s.URIs
+					}
+				}
+				result, err := json.Marshal(ret)
+				if err != nil {
+					fmt.Println(err.Error())
+					return "", nil
+				}
+				return string(result), nil*/
+		}
+	}
+	return ret, nil
+}
+
 // NewUbicDeployManager create new deployment
 func (us *UbicService) NewUbicDeployManager(lid ctypes.LeaseID, sdlSteam []byte) (string, error) {
 	sdlFile, err := sdl.Read(sdlSteam)
 	if err != nil {
-		fmt.Println("exit in sdl conv", err.Error())
+		fmt.Println("NewUbicDeployManager:exit in sdl conv", err.Error())
+		return "", err
 	}
 	groups, _ := sdlFile.Manifest()
 	if len(groups) != 1 {
-		return "", nil
+		return "", errors.New("not support more group")
 	}
 	for _, group := range groups {
 		deployManager := cluster.NewUbicDeploymentManager(context.Background(),
@@ -139,8 +206,16 @@ func (us *UbicService) GetAllActiveLeases() []ctypes.LeaseID {
 	ret := make([]ctypes.LeaseID, 0)
 	for k := range us.Managers {
 		ret = append(ret, k)
+		//us.CloseManager(k)
 	}
 	return ret
+}
+
+// CloseAllLease is function close all exist lease for test
+func (us *UbicService) CloseAllLease() {
+	for k := range us.Managers {
+		us.CloseManager(k)
+	}
 }
 
 // GetTotalResource get k8s total resource
@@ -191,7 +266,7 @@ func (us *UbicService) CloseManager(lid ctypes.LeaseID) {
 		ubicDeployTemp, ok := us.Managers[lid]
 		if ok {
 			err := ubicDeployTemp.Teardown()
-			if err != nil {
+			if err == nil {
 				delete(us.Managers, lid)
 			}
 		}

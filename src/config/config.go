@@ -19,6 +19,7 @@ type ProviderConfig struct {
 	SecretKey                        string
 	OrderFactory                     string
 	ProviderContract                 string
+	ValidatorFactoryContract         string
 	ProviderFactoryContract          string
 	BidTimeOut                       int64
 	NameSpace                        string

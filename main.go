@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fsnotify/fsnotify"
+	"github.com/ovrclk/akash/sdl"
 	"github.com/spf13/viper"
 	"io"
 	"log"
@@ -121,7 +122,9 @@ func clusterFunc() {
 	bs.Init(ctxGlobal, configData,
 		mainScan.NeedBidChan,
 		mainScan.NeedCreateChan,
-		mainScan.UserCancelChan, cs)
+		mainScan.UserCancelChan,
+		mainScan.NeedChallengeChan,
+		mainScan.ChallengeEndChan, cs)
 	go bs.Run(&wgGlobal)
 	go mainScan.MainLoop(ctxGlobal, &linkClient, &wgGlobal)
 	for {
@@ -134,6 +137,77 @@ func clusterFunc() {
 		}
 	}
 }
+func closeAll() {
+	//var wgGlobal sync.WaitGroup
+	ctxGlobal, _ := context.WithCancel(context.Background())
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	configHandle := viper.New()
+	configData := config.LoadConfig(configHandle)
+	configHandle.WatchConfig()
+	watch := func(e fsnotify.Event) {
+		log.Printf("Config file is changed: %s\n", e.String())
+		config.ConvertConfigPtr(configHandle, configData)
+	}
+	configHandle.OnConfigChange(watch)
+	cs := new(ubic_cluster.UbicService)
+	kubeSettings := builder.NewDefaultSettings()
+	kubeSettings.DeploymentIngressDomain = configData.DeploymentIngressDomain
+	kubeSettings.DeploymentIngressExposeLBHosts = configData.DeploymentIngressExposeLBHosts
+	kubeSettings.DeploymentIngressStaticHosts = configData.DeploymentIngressStaticHosts
+	kubeSettings.NetworkPoliciesEnabled = configData.DeploymentNetworkPoliciesEnabled
+	kubeSettings.ClusterPublicHostname = configData.ClusterPublicHostname
+	kubeSettings.CPUCommitLevel = configData.OvercommitPercentCPU
+	kubeSettings.MemoryCommitLevel = configData.OvercommitPercentMemory
+	kubeSettings.StorageCommitLevel = configData.OvercommitPercentStorage
+	kubeSettings.DeploymentRuntimeClass = configData.DeploymentRuntimeClass
+	kubeSettings.DockerImagePullSecretsName = strings.TrimSpace(configData.DockerImagePullSecretsName)
+	hostConf := operatorcommon.OperatorConfig{
+		ProviderAddress:    configData.ProviderAddress,
+		PruneInterval:      time.Duration(configData.HostPruneInterval),
+		WebRefreshInterval: time.Duration(configData.HostWebRefreshInterval),
+		RetryDelay:         time.Duration(configData.HostRetryDelay),
+	}
+	// start HostName service
+	go hostnameoperator.DoUbicHostnameOperator(ctxGlobal,
+		configData.K8sConfigPath, configData.NameSpace, configData.HostNameServiceListenAddr, &hostConf)
+
+	clusterSettings := map[interface{}]interface{}{
+		builder.SettingsKey: kubeSettings,
+	}
+	clusterConfig := cluster.NewDefaultConfig()
+	clusterConfig.DeploymentIngressDomain = configData.DeploymentIngressDomain
+	clusterConfig.DeploymentIngressStaticHosts = configData.DeploymentIngressStaticHosts
+	clusterConfig.ClusterSettings = clusterSettings
+	cs.NewService(ctxGlobal, *configData, clusterConfig)
+	cs.CloseAllLease()
+	time.Sleep(20 * time.Second)
+}
+
+func readSdlTest() {
+	path := "./sdl.txt"
+	localsdl, err := sdl.ReadFile(path)
+	if err != nil {
+		fmt.Println("error 1")
+		fmt.Println(err.Error())
+		return
+	}
+	groups, err := localsdl.Manifest()
+	if err != nil {
+		fmt.Println("error2")
+		fmt.Println(err.Error())
+		return
+	}
+	fmt.Println("ead")
+	for _, group := range groups {
+		for _, service := range group.Services {
+			fmt.Println(service.Env)
+			fmt.Println(service)
+		}
+	}
+	fmt.Println()
+}
 func main() {
+	//readSdlTest()
+	//closeAll()
 	clusterFunc()
 }
