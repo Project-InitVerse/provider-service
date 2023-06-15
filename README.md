@@ -73,7 +73,7 @@ Refer to the Kubernetes Cluster official tutorial
 
 ### 2. Domain Name Review
 
-Add DNS (type A) records for your Akash Provider related domains on your DNS hosting provider.
+Add DNS (type A) records for your Ubic Provider related domains on your DNS hosting provider.
 ```
 *.ingress.yourdomain.com
 
@@ -118,7 +118,7 @@ tar xvfg ubic-ingress-1.2.6.tgz
 ```
 5. install ingress-controller
 ```
-helm install ubic-ingress ./ubic-ingress -n ingress-nginx --set domain=youdomain.com
+helm install ubic-ingress ./ubic-ingress -n ingress-nginx --set domain=ingress.youdomain.com
 ```
 > TIPS. To install the Kubernate on an uninstalled server, change the ingress port mode from ClusterIP to NodePort
 ### 4. Run providerService
