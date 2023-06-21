@@ -775,11 +775,11 @@ func (bs *Service) getSeedFromValidatorMidWare(md5Seed *big.Int, providerAddr st
 			return nil, err
 		}
 		res, err := client.Do(req)
-		defer res.Body.Close()
+		
 		if err != nil {
 			return nil, err
 		}
-
+		defer res.Body.Close()
 		body, err := ioutil.ReadAll(res.Body)
 		fmt.Println(res.Body)
 		if err != nil {
@@ -797,10 +797,10 @@ func (bs *Service) getSeedFromValidatorMidWare(md5Seed *big.Int, providerAddr st
 		}
 		return &response, nil
 	}
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 100; i++ {
 		unHashSeed, err := requestFunction(porCount)
 		if err != nil {
-			time.Sleep(1 * time.Second)
+			time.Sleep(2 * time.Second)
 			log.Println("get seed error ", err.Error())
 			continue
 		}
