@@ -100,9 +100,9 @@ func (sc *Scan) MainLoop(ctx context.Context, linkClient *util.LinkClient, globa
 		count64, _ := strconv.ParseInt(resCount[2:], 16, 32)
 		count := int(count64) - 2
 		//TODO for test
-		//if oldCount == 0 {
-		//	oldCount = count - 1
-		//}
+		if oldCount == 0 {
+			oldCount = count - 1
+		}
 
 		if oldCount < count {
 			//fmt.Println("current height:", old_count, "target height", count, "time", time.Now())
