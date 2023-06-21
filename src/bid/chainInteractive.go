@@ -826,7 +826,7 @@ func (bs *Service) getChallengeSdl() []byte {
 		log.Println("getChallengeInfo error", err.Error())
 		return nil
 	}
-	sdlTrx, _, _ := bs.Client.TransactionByHash(context.Background(), common.HexToHash(sdlTrxID.String()))
+	sdlTrx, _, _ := bs.Client.TransactionByHash(context.Background(), common.HexToHash(sdlTrxID.Text(16)))
 	return sdlTrx.Data()
 }
 func (bs *Service) getChallengeInfo(providerOwner string) *util.ValidatorFactoryproviderChallengeInfo {
