@@ -198,7 +198,10 @@ func (c *client) ObserveHostnameState(ctx context.Context) (<-chan ctypes.Hostna
 				if !ok { // Channel closed when an error happens
 					return
 				}
-				ph := result.Object.(*crd.ProviderHost)
+				ph,ok := result.Object.(*crd.ProviderHost)
+				if !ok{
+				    continue
+				}
 
 				ownerAddr := common.HexToAddress(ph.Spec.Owner)
 				providerAddr := common.HexToAddress(ph.Spec.Provider)
