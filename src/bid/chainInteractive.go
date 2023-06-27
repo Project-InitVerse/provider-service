@@ -59,6 +59,9 @@ func (bs *Service) getTotalResource() resourceStorage {
 	providerContractAddr := common.HexToAddress(bs.Conf.ProviderContract)
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
 	var ret resourceStorage
+	ret.CPUCount = new(big.Int).SetInt64(0)
+	ret.MemoryCount = new(big.Int).SetInt64(0)
+	ret.StorageCount = new(big.Int).SetInt64(0)
 	if err != nil {
 		log.Println("getTotalResource: private key error", err.Error())
 		return ret
@@ -87,7 +90,9 @@ func (bs *Service) getTotalResource() resourceStorage {
 		log.Println("getTotalResource:call contract error", err.Error())
 		return ret
 	}
-
+	if len(result) < 96 {
+		return ret
+	}
 	ret.CPUCount, _ = new(big.Int).SetString(common.Bytes2Hex(result[0:32]), 16)
 	ret.MemoryCount, _ = new(big.Int).SetString(common.Bytes2Hex(result[32:64]), 16)
 	ret.StorageCount, _ = new(big.Int).SetString(common.Bytes2Hex(result[64:]), 16)
@@ -722,7 +727,7 @@ func (bs *Service) getAllProviderServOrders() ([]util.Order, error) {
 type getSeedStruct struct {
 	Md5Seed      *big.Int `json:"md5Seed"`
 	ProviderAddr string   `json:"providerAddr"`
-	PorCount     int64    `json:"porCount"`
+	PorCount     uint64   `json:"porCount"`
 }
 type seedResponse struct {
 	Seed   uint64 `json:"seed"`
@@ -730,7 +735,7 @@ type seedResponse struct {
 	Find   bool   `json:"find"`
 }
 
-func (bs *Service) calcPORCount() int64 {
+func (bs *Service) calcPORCount() uint64 {
 	providerFactory, err := util.NewProviderFactory(common.HexToAddress(bs.Conf.ProviderFactoryContract), bs.Client)
 	if err != nil {
 		log.Println("calcPORCount error", err.Error())
@@ -741,22 +746,32 @@ func (bs *Service) calcPORCount() int64 {
 		log.Println("get DecimalCpu error", err.Error())
 		return 0
 	}
-	decimalStorage, err := providerFactory.DecimalMemory(nil)
+	decimalMemory, err := providerFactory.DecimalMemory(nil)
 	if err != nil {
-		log.Println("get decimalStorage error", err.Error())
+		log.Println("get decimalMemory error", err.Error())
 		return 0
 	}
-	cpuCount := bs.Total.CPUCount.Int64() / decimalCPU.Int64()
-	memCount := bs.Total.MemoryCount.Int64() / decimalStorage.Int64()
-	fmt.Println(cpuCount, memCount, bs.Total.MemoryCount.Int64(), decimalCPU, decimalStorage)
-	if cpuCount > memCount {
-		cpuCount = memCount
+	nodeResources, err := bs.Cluster.GetNodesAvailable()
+	if err != nil {
+		log.Println("GetNodesAvailable error", err.Error())
+		return 0
 	}
-	return cpuCount
+	allCount := uint64(0)
+	for _, nodeResource := range nodeResources {
+		cpuCount := nodeResource.CPU / decimalCPU.Uint64()
+		memCount := nodeResource.Memory / decimalMemory.Uint64()
+		fmt.Println(cpuCount, memCount, bs.Total.MemoryCount.Int64(), decimalCPU, decimalMemory)
+		if cpuCount > memCount {
+			cpuCount = memCount
+		}
+		allCount = allCount + cpuCount
+	}
+
+	return allCount
 }
-func (bs *Service) getSeedFromValidatorMidWare(md5Seed *big.Int, providerAddr string, validatorURL string) (*seedResponse, int64) {
+func (bs *Service) getSeedFromValidatorMidWare(md5Seed *big.Int, providerAddr string, validatorURL string) (*seedResponse, uint64) {
 	porCount := bs.calcPORCount()
-	requestFunction := func(porCount int64) (*seedResponse, error) {
+	requestFunction := func(porCount uint64) (*seedResponse, error) {
 		method := "POST"
 		client := &http.Client{Timeout: 5 * time.Second}
 
@@ -775,7 +790,7 @@ func (bs *Service) getSeedFromValidatorMidWare(md5Seed *big.Int, providerAddr st
 			return nil, err
 		}
 		res, err := client.Do(req)
-		
+
 		if err != nil {
 			return nil, err
 		}
@@ -901,14 +916,16 @@ func (bs *Service) endChallenge() {
 	err = bs.Client.SendTransaction(context.Background(), signedTx)
 	log.Println("ValidatorNotSubmitResult tx sent: ", signedTx.Hash().Hex())
 }
-func (bs *Service) changeProviderInfo() {
+func (bs *Service) ChangeProviderInfo() {
 	provider, err := util.NewProvider(common.HexToAddress(bs.Conf.ProviderContract), bs.Client)
 	if err != nil {
 		log.Println("changeProviderInfo error", err.Error())
 		return
 	}
 	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(212))
+	nodeId, _ := strconv.ParseInt(bs.Conf.NodeChainID, 10, 64)
+	fmt.Println(nodeId)
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(nodeId))
 	if err != nil {
 		log.Println("changeProviderInfo error1", err.Error())
 		return
@@ -932,8 +949,9 @@ func (bs *Service) changeProviderInfo() {
 	}
 	auth.GasPrice = gasPrice
 	auth.Nonce = new(big.Int).SetUint64(nonce) // the account nonce for the transaction
-	tx, err := provider.ChangeProviderInfo(auth, "{\"country\":\"CN\",\"email\":\"15850546725@163.com\",\"website\":\"www.google.com\",\"kubeVersion\":\"1.0\",\"platform\":\"linux/amd64\",\"uri\":\"http://provider.xeon.computer:8443\",\"attributes\":{\"region\":\"nanjing\",\"chiaPlotting\":\"false\",\"host\":\"192.168.1.1\",\"cpu\":\"intel\"}}")
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(212)), privateKey)
+	tx, err := provider.ChangeProviderInfo(auth, "{\"country\":\"CN\",\"email\":\"365mad@qq.com\",\"website\":\"www.google.com\",\"kubeVersion\":\"1.0\",\"platform\":\"linux/amd64\",\"uri\":\"https://provider.ubicloud.matrixlabs.org:8443\",\"attributes\":{\"region\":\"wuxi\",\"chiaPlotting\":\"false\",\"host\":\"192.168.1.1\",\"cpu\":\"intel\"}}")
+
+	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(big.NewInt(nodeId)), privateKey)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -76,7 +76,7 @@ func (us *UbicService) LoadExistDeployManager() {
 // NewChallengeDeployManager create new deployment for POR
 func (us *UbicService) NewChallengeDeployManager(
 	sdlSteam []byte,
-	challengeCount int64,
+	challengeCount uint64,
 	seed uint64, _taskID int64, commitURL string) ([]ctypes.LeaseID, error) {
 	sdlFile, err := sdl.Read(sdlSteam)
 	if err != nil {
@@ -88,11 +88,11 @@ func (us *UbicService) NewChallengeDeployManager(
 		return nil, errors.New("NewChallengeDeployManager:group not support over 1")
 	}
 	ret := make([]ctypes.LeaseID, 0)
-	for i := int64(0); i < challengeCount; i++ {
+	for i := uint64(0); i < challengeCount; i++ {
 		groupsIn, _ := sdlFile.Manifest()
 		lidChallenge := ctypes.LeaseID{
 			Owner:    "Owner",
-			OSeq:     uint64(i),
+			OSeq:     i,
 			Provider: "challengeProvider",
 		}
 		for _, group := range groupsIn {
@@ -236,6 +236,18 @@ func (us *UbicService) GetTotalAvailable() (ctypes.InventoryMetricTotal, error) 
 		return ctypes.InventoryMetricTotal{}, err
 	}
 	return in.Metrics().TotalAvailable, nil
+}
+func (us *UbicService) GetNodesAvailable() ([]ctypes.InventoryNodeMetric, error) {
+	in, err := us.UbicKubeClient.Inventory(context.Background())
+	if err != nil {
+		fmt.Println("inventory error ", err.Error())
+		return nil, err
+	}
+	ret := make([]ctypes.InventoryNodeMetric, 0)
+	for _, v := range in.Metrics().Nodes {
+		ret = append(ret, v.Available)
+	}
+	return ret, nil
 }
 
 // GetStatus get k8s status

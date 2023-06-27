@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fsnotify/fsnotify"
@@ -179,13 +180,31 @@ func closeAll() {
 	clusterConfig.DeploymentIngressStaticHosts = configData.DeploymentIngressStaticHosts
 	clusterConfig.ClusterSettings = clusterSettings
 	cs.NewService(ctxGlobal, *configData, clusterConfig)
-	cs.CloseAllLease()
-	time.Sleep(20 * time.Second)
+	fmt.Println(cs.GetTotalAvailable())
+	fmt.Println(cs.GetTotalResource())
+	/*
+		path := "./sdl.txt"
+		buf, err := os.ReadFile(path)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		lids, err := cs.NewChallengeDeployManager(buf, 1, 1, 1, "www.baidu.com")
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		time.Sleep(300 * time.Second)
+		cs.CloseManager(lids[0])
+		time.Sleep(20 * time.Second)*/
 }
 
 func readSdlTest() {
 	path := "./sdl.txt"
-	localsdl, err := sdl.ReadFile(path)
+	buf, err := os.ReadFile(path)
+	a := hex.EncodeToString(buf)
+	fmt.Println(hex.EncodeToString(buf))
+	x, err := hex.DecodeString(a)
+	localsdl, err := sdl.Read(x)
 	if err != nil {
 		fmt.Println("error 1")
 		fmt.Println(err.Error())

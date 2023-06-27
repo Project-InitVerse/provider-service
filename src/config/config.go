@@ -4,9 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
 	"log"
+	"strings"
 )
 
 // ProviderConfig is config struct
@@ -75,6 +78,13 @@ func WatchConfig(c *viper.Viper) error {
 	<-ctx.Done()
 	return nil
 }
+func ConvertFromAddress(addr string) string {
+	if strings.HasPrefix(addr, "U4") {
+		return common.HexToAddress(string(base58.Decode(addr[2:]))).String()
+	} else {
+		return addr
+	}
+}
 
 // ConvertConfig is convent config function
 func ConvertConfig(c *viper.Viper) *ProviderConfig {
@@ -84,6 +94,12 @@ func ConvertConfig(c *viper.Viper) *ProviderConfig {
 		log.Println("convertConfig error", err.Error())
 		return nil
 	}
+	pConfig.ProviderAddress = ConvertFromAddress(pConfig.ProviderAddress)
+	pConfig.OrderFactory = ConvertFromAddress(pConfig.OrderFactory)
+	pConfig.ProviderContract = ConvertFromAddress(pConfig.ProviderContract)
+	pConfig.ProviderFactoryContract = ConvertFromAddress(pConfig.ProviderFactoryContract)
+	pConfig.ValidatorFactoryContract = ConvertFromAddress(pConfig.ValidatorFactoryContract)
+	pConfig.Cert = ConvertFromAddress(pConfig.Cert)
 	return &pConfig
 }
 
