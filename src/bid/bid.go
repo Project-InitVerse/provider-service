@@ -29,6 +29,8 @@ var (
 	challengeState       string = "challengeState"
 	challengeProvider    string = "challengeProvider"
 	challengeCreateState uint64 = 1
+	zeroAddr             string = "0x0000000000000000000000000000000000000000"
+	noOrderFound         string = "no orders found"
 )
 
 type resourceStorage struct {
@@ -106,6 +108,9 @@ func (bs *Service) initExistDeployment() {
 			state, orderAddr, err := bs.getOrderState(lease.OSeq)
 			if err != nil {
 				log.Println("initExistDeployment get order state error", err.Error())
+				if orderAddr == zeroAddr && err.Error() == noOrderFound {
+					bs.Cluster.CloseManager(lease)
+				}
 				continue
 			}
 			log.Println("initExistDeployment", lease, state, orderAddr)

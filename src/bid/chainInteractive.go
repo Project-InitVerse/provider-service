@@ -330,6 +330,9 @@ func (bs *Service) getOrderState(index uint64) (int64, string, error) {
 		return 0, "", err
 	}
 	hexOrderAddr := common.BytesToAddress(resultOrder)
+	if hexOrderAddr.String() == "0x0000000000000000000000000000000000000000" {
+		return 0, hexOrderAddr.String(), errors.New(noOrderFound)
+	}
 	methodOrderState := "order_status"
 	dataOrderStateTrx, _ := bs.Abi[OrderBaseName].Pack(methodOrderState)
 	msgOrderState := ethereum.CallMsg{
