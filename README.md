@@ -28,7 +28,7 @@ go build .
 The following content config the template
 ```
 {
-  "NodeURL":"http://192.168.1.123:30010",--You are advised to use the official or local http service ip address :port
+  "NodeURL":"http://192.168.1.123:30010",--You are advised to use the official or local http service ip address :port need -ethcompatible
   "NodeChainID": "172",
   "CPUPrice": "1000000000", --Order quote cpu a core of 1000 copies, quote precision bit value, chain accuracy of 18 bits
   "MemoryPrice": "10000000", -- quote precision bit value, chain accuracy of 18 bits
