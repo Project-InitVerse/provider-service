@@ -79,8 +79,8 @@ Add DNS (type A) records for your Ubic Provider related domains on your DNS host
 
 provider.yourdomain.com
 ```
-** *.ingress.yourdomain.com needs to point to ingress nginx in the k8s cluster. **
-** provider.yourdomain.com must point to the port monitored by the gatewaylistenaddress provided by the provider serivce.**
+**ingress.yourdomain.com needs to point to ingress nginx in the k8s cluster.**
+**provider.yourdomain.com must point to the port monitored by the gatewaylistenaddress provided by the provider serivce.**
 > NOTE - do not use Cloudflare or any other TLS proxy solution for your Provider DNS A records.
 > NOTE - Instead of the multiple DNS A records for worker nodes, consider using CNAME DNS records such as the example provided below.  CNAME use allows ease of management and introduces higher availability.
 >
