@@ -284,8 +284,16 @@ func (bs *Service) handleBidFinal(bidFinalInfo *util.NeedCreate) {
 				log.Println("handleBidFinal:getOrderCount error", err.Error())
 				return
 			}
-			bs.KeepResource.Store(strings.ToLower(bidFinalInfo.ContractAddress), orderSource)
-			bs.handleResource(orderSource, false)
+			log.Println("handleBidFinal source", bs.Total, orderSource)
+			if bs.Total.CPUCount.Cmp(orderSource.CPUCount) >= 0 &&
+				bs.Total.MemoryCount.Cmp(orderSource.MemoryCount) >= 0 &&
+				bs.Total.StorageCount.Cmp(orderSource.StorageCount) >= 0 {
+				bs.KeepResource.Store(strings.ToLower(bidFinalInfo.ContractAddress), orderSource)
+				bs.handleResource(orderSource, false)
+			} else {
+				log.Println("handleBidFinal:left resource not enough")
+				return
+			}
 		}
 		sdlFile := bs.getSdlByID(bidFinalInfo.ContractAddress)
 		owner, err := bs.getOwner(bidFinalInfo.ContractAddress)
