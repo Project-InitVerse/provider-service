@@ -597,6 +597,7 @@ func (bs *Service) updateResource() {
 		return
 	}
 	allActiveLeases := bs.Cluster.GetAllActiveLeases()
+	activeOrder := make(map[string]int)
 	if len(orders) != 0 {
 		leaseMap := make(map[ctypes.LeaseID]int, len(allActiveLeases))
 		for _, lease := range allActiveLeases {
@@ -615,6 +616,7 @@ func (bs *Service) updateResource() {
 				if _, ok := leaseMap[tempLease]; !ok {
 					return
 				}
+				activeOrder[strings.ToLower(order.ContractAddress.String())] = 1
 				leaseMap[tempLease] = 1
 
 			}
@@ -704,7 +706,9 @@ func (bs *Service) updateResource() {
 		}
 
 		bs.KeepResource.Range(func(key any, value any) bool {
-			contractTempAddrs = append(contractTempAddrs, key.(string))
+			if _, ok := activeOrder[strings.ToLower(key.(string))]; !ok {
+				contractTempAddrs = append(contractTempAddrs, key.(string))
+			}
 			return true
 		})
 		for _, value := range contractTempAddrs {
