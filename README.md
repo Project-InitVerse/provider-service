@@ -43,7 +43,7 @@ The following content config the template
   "NameSpace": "ubic-service",
   "K8sConfigPath": "./admin.conf", -- Enter the access configuration file path of the k8s cluster
   "Cert": "0xB3ce612Cf77D4e2F7CD6dea0651C90bD0295b2b3",-- Please enter cert address
-  "GatewayListenAddress": "0.0.0.0:8443",
+  "GatewayListenAddress": "0.0.0.0:8443", -- This listening address is used by the provider to provide rpc for ordinary users to query the instance status and communicate with the instance
   "DeploymentIngressDomain":"ingress.daemon.com", -- Configure the domain name you intend for the user
   "DeploymentIngressExposeLBHosts":"false",
   "DeploymentIngressStaticHosts":"true",
@@ -79,6 +79,9 @@ Add DNS (type A) records for your Ubic Provider related domains on your DNS host
 
 provider.yourdomain.com
 ```
+**ingress.yourdomain.com needs to point to ingress nginx in the k8s cluster.**
+
+**provider.yourdomain.com must point to the port monitored by the gatewaylistenaddress provided by the provider serivce.**
 > NOTE - do not use Cloudflare or any other TLS proxy solution for your Provider DNS A records.
 > NOTE - Instead of the multiple DNS A records for worker nodes, consider using CNAME DNS records such as the example provided below.  CNAME use allows ease of management and introduces higher availability.
 >
