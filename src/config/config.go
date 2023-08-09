@@ -79,7 +79,7 @@ func WatchConfig(c *viper.Viper) error {
 	return nil
 }
 func ConvertFromAddress(addr string) string {
-	if strings.HasPrefix(addr, "U4") {
+	if strings.HasPrefix(addr, "I4") {
 		return common.HexToAddress(string(base58.Decode(addr[2:]))).String()
 	} else {
 		return addr
