@@ -40,12 +40,12 @@ type ManifestSpec struct {
 
 // Deployment returns the cluster.Deployment that the saved manifest represents.
 func (m Manifest) Deployment() (ctypes.Deployment, error) {
-	lid, err := m.Spec.LeaseID.ToUbicType()
+	lid, err := m.Spec.LeaseID.ToIniType()
 	if err != nil {
 		return nil, err
 	}
 
-	group, err := m.Spec.Group.toAkash()
+	group, err := m.Spec.Group.toIni()
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (d deployment) ManifestGroup() maniv2beta1.Group {
 
 // NewManifest creates new manifest with provided details. Returns error in case of failure.
 func NewManifest(ns string, lid ctypes.LeaseID, mgroup *maniv2beta1.Group) (*Manifest, error) {
-	group, err := manifestGroupFromAkash(mgroup)
+	group, err := manifestGroupFromIni(mgroup)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func NewManifest(ns string, lid ctypes.LeaseID, mgroup *maniv2beta1.Group) (*Man
 		},
 		Spec: ManifestSpec{
 			Group:   group,
-			LeaseID: LeaseIDFromUbictype(lid),
+			LeaseID: LeaseIDFromInitype(lid),
 		},
 	}, nil
 }
@@ -95,8 +95,8 @@ type LeaseID struct {
 	Provider string `json:"provider"`
 }
 
-// ToUbicType returns LeaseID from LeaseID details
-func (id LeaseID) ToUbicType() (ctypes.LeaseID, error) {
+// ToIniType returns LeaseID from LeaseID details
+func (id LeaseID) ToIniType() (ctypes.LeaseID, error) {
 	return ctypes.LeaseID{
 		Owner:    id.Owner,
 		OSeq:     id.OSeq,
@@ -104,8 +104,8 @@ func (id LeaseID) ToUbicType() (ctypes.LeaseID, error) {
 	}, nil
 }
 
-// LeaseIDFromUbictype returns LeaseID instance from akash
-func LeaseIDFromUbictype(id ctypes.LeaseID) LeaseID {
+// LeaseIDFromInitype returns LeaseID instance from ini
+func LeaseIDFromInitype(id ctypes.LeaseID) LeaseID {
 	return LeaseID{
 		Owner:    id.Owner,
 		OSeq:     id.OSeq,
@@ -121,15 +121,15 @@ type ManifestGroup struct {
 	Services []ManifestService `json:"services,omitempty"`
 }
 
-// toAkash returns akash group details formatted from manifest group
-func (m ManifestGroup) toAkash() (maniv2beta1.Group, error) {
+// toIni returns ini group details formatted from manifest group
+func (m ManifestGroup) toIni() (maniv2beta1.Group, error) {
 	am := maniv2beta1.Group{
 		Name:     m.Name,
 		Services: make([]maniv2beta1.Service, 0, len(m.Services)),
 	}
 
 	for _, svc := range m.Services {
-		asvc, err := svc.toAkash()
+		asvc, err := svc.toIni()
 		if err != nil {
 			return am, err
 		}
@@ -139,15 +139,15 @@ func (m ManifestGroup) toAkash() (maniv2beta1.Group, error) {
 	return am, nil
 }
 
-// manifestGroupFromAkash returns manifest group instance from akash group
-func manifestGroupFromAkash(m *maniv2beta1.Group) (ManifestGroup, error) {
+// manifestGroupFromIni returns manifest group instance from ini group
+func manifestGroupFromIni(m *maniv2beta1.Group) (ManifestGroup, error) {
 	ma := ManifestGroup{
 		Name:     m.Name,
 		Services: make([]ManifestService, 0, len(m.Services)),
 	}
 
 	for _, svc := range m.Services {
-		service, err := manifestServiceFromAkash(svc)
+		service, err := manifestServiceFromIni(svc)
 		if err != nil {
 			return ManifestGroup{}, err
 		}
@@ -190,8 +190,8 @@ type ManifestService struct {
 	Params *ManifestServiceParams `json:"params,omitempty"`
 }
 
-func (ms ManifestService) toAkash() (maniv2beta1.Service, error) {
-	res, err := ms.Resources.toAkash()
+func (ms ManifestService) toIni() (maniv2beta1.Service, error) {
+	res, err := ms.Resources.toIni()
 	if err != nil {
 		return maniv2beta1.Service{}, err
 	}
@@ -208,7 +208,7 @@ func (ms ManifestService) toAkash() (maniv2beta1.Service, error) {
 	}
 
 	for _, expose := range ms.Expose {
-		value, err := expose.toAkash()
+		value, err := expose.toIni()
 		if err != nil {
 			return maniv2beta1.Service{}, err
 		}
@@ -239,8 +239,8 @@ func (ms ManifestService) toAkash() (maniv2beta1.Service, error) {
 	return *ams, nil
 }
 
-func manifestServiceFromAkash(ams maniv2beta1.Service) (ManifestService, error) {
-	resources, err := resourceUnitsFromAkash(ams.Resources)
+func manifestServiceFromIni(ams maniv2beta1.Service) (ManifestService, error) {
+	resources, err := resourceUnitsFromIni(ams.Resources)
 	if err != nil {
 		return ManifestService{}, err
 	}
@@ -257,7 +257,7 @@ func manifestServiceFromAkash(ams maniv2beta1.Service) (ManifestService, error) 
 	}
 
 	for _, expose := range ams.Expose {
-		ms.Expose = append(ms.Expose, manifestServiceExposeFromAkash(expose))
+		ms.Expose = append(ms.Expose, manifestServiceExposeFromIni(expose))
 	}
 
 	if ams.Params != nil {
@@ -291,7 +291,7 @@ type ManifestServiceExpose struct {
 	EndpointSequenceNumber uint32                           `json:"endpoint_sequence_number"`
 }
 
-//ManifestServiceExposeHTTPOptions is struct
+// ManifestServiceExposeHTTPOptions is struct
 type ManifestServiceExposeHTTPOptions struct {
 	MaxBodySize uint32   `json:"max_body_size,omitempty"`
 	ReadTimeout uint32   `json:"read_timeout,omitempty"`
@@ -301,7 +301,7 @@ type ManifestServiceExposeHTTPOptions struct {
 	NextCases   []string `json:"next_cases,omitempty"`
 }
 
-func (mse ManifestServiceExpose) toAkash() (maniv2beta1.ServiceExpose, error) {
+func (mse ManifestServiceExpose) toIni() (maniv2beta1.ServiceExpose, error) {
 	proto, err := maniv2beta1.ParseServiceProtocol(mse.Proto)
 	if err != nil {
 		return maniv2beta1.ServiceExpose{}, err
@@ -334,7 +334,7 @@ func (mse ManifestServiceExpose) DetermineExposedExternalPort() uint16 {
 	return mse.ExternalPort
 }
 
-func manifestServiceExposeFromAkash(amse maniv2beta1.ServiceExpose) ManifestServiceExpose {
+func manifestServiceExposeFromIni(amse maniv2beta1.ServiceExpose) ManifestServiceExpose {
 	return ManifestServiceExpose{
 		Port:                   amse.Port,
 		ExternalPort:           amse.ExternalPort,
@@ -355,7 +355,7 @@ func manifestServiceExposeFromAkash(amse maniv2beta1.ServiceExpose) ManifestServ
 	}
 }
 
-//ManifestServiceStorage stores name and size
+// ManifestServiceStorage stores name and size
 type ManifestServiceStorage struct {
 	Name string `json:"name"`
 	Size string `json:"size"`
@@ -368,7 +368,7 @@ type ResourceUnits struct {
 	Storage []ManifestServiceStorage `json:"storage,omitempty"`
 }
 
-func (ru ResourceUnits) toAkash() (types.ResourceUnits, error) {
+func (ru ResourceUnits) toIni() (types.ResourceUnits, error) {
 	memory, err := strconv.ParseUint(ru.Memory, 10, 64)
 	if err != nil {
 		return types.ResourceUnits{}, err
@@ -398,7 +398,7 @@ func (ru ResourceUnits) toAkash() (types.ResourceUnits, error) {
 	}, nil
 }
 
-func resourceUnitsFromAkash(aru types.ResourceUnits) (ResourceUnits, error) {
+func resourceUnitsFromIni(aru types.ResourceUnits) (ResourceUnits, error) {
 	res := ResourceUnits{}
 	if aru.CPU != nil {
 		if aru.CPU.Units.Value() > math.MaxUint32 {
@@ -457,7 +457,7 @@ type ProviderHostSpec struct {
 	ExternalPort uint32 `json:"external_port"`
 }
 
-//ProviderHostList is struct
+// ProviderHostList is struct
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ProviderHostList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -465,7 +465,7 @@ type ProviderHostList struct {
 	Items           []ProviderHost `json:"items"`
 }
 
-//ProviderLeasedIP is struct
+// ProviderLeasedIP is struct
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ProviderLeasedIP struct {
@@ -476,7 +476,7 @@ type ProviderLeasedIP struct {
 	Status ProviderLeasedIPStatus `json:"status,omitempty"`
 }
 
-//ProviderLeasedIPList is struct
+// ProviderLeasedIPList is struct
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type ProviderLeasedIPList struct {
 	metav1.TypeMeta `json:",inline"`
@@ -484,13 +484,13 @@ type ProviderLeasedIPList struct {
 	Items           []ProviderLeasedIP `json:"items"`
 }
 
-//ProviderLeasedIPStatus is struct
+// ProviderLeasedIPStatus is struct
 type ProviderLeasedIPStatus struct {
 	State   string `json:"state,omitempty"`
 	Message string `json:"message,omitempty"`
 }
 
-//ProviderLeasedIPSpec is struct
+// ProviderLeasedIPSpec is struct
 type ProviderLeasedIPSpec struct {
 	LeaseID      LeaseID `json:"lease_id"`
 	ServiceName  string  `json:"service_name"`

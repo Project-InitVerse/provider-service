@@ -36,12 +36,10 @@ const (
 const runtimeClassNoneValue = "none"
 
 const (
-	envVarAkashGroupSequence         = "AKASH_GROUP_SEQUENCE"
-	envVarAkashDeploymentSequence    = "AKASH_DEPLOYMENT_SEQUENCE"
-	envVarAkashOrderSequence         = "AKASH_ORDER_SEQUENCE"
-	envVarAkashOwner                 = "AKASH_OWNER"
-	envVarAkashProvider              = "AKASH_PROVIDER"
-	envVarAkashClusterPublicHostname = "AKASH_CLUSTER_PUBLIC_HOSTNAME"
+	envVarIniOrderSequence         = "INI_ORDER_SEQUENCE"
+	envVarIniOwner                 = "INI_OWNER"
+	envVarIniProvider              = "INI_PROVIDER"
+	envVarIniClusterPublicHostname = "INI_CLUSTER_PUBLIC_HOSTNAME"
 )
 
 var (
@@ -94,7 +92,7 @@ func addIfNotPresent(envVarsAlreadyAdded map[string]int, env []corev1.EnvVar, ke
 	return env
 }
 
-//SuffixForNodePortServiceName is string
+// SuffixForNodePortServiceName is string
 const SuffixForNodePortServiceName = "-np"
 
 func makeGlobalServiceNameFromBasename(basename string) string {

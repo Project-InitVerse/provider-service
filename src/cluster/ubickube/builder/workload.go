@@ -139,7 +139,7 @@ func (b *workload) persistentVolumeClaims() []corev1.PersistentVolumeClaim {
 				},
 				VolumeMode:       &volumeMode,
 				StorageClassName: nil,
-				DataSource:       nil, // bind to existing pvc. akash does not support it. yet
+				DataSource:       nil, // bind to existing pvc. ini does not support it. yet
 			},
 		}
 
@@ -176,9 +176,9 @@ func (b *workload) imagePullSecrets() []corev1.LocalObjectReference {
 
 func (b *workload) addEnvVarsForDeployment(envVarsAlreadyAdded map[string]int, env []corev1.EnvVar) []corev1.EnvVar {
 	// Add each env. var. if it is not already set by the SDL
-	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarAkashOrderSequence, b.lid.OSeq)
-	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarAkashOwner, b.lid.Owner)
-	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarAkashProvider, b.lid.Provider)
-	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarAkashClusterPublicHostname, b.settings.ClusterPublicHostname)
+	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarIniOrderSequence, b.lid.OSeq)
+	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarIniOwner, b.lid.Owner)
+	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarIniProvider, b.lid.Provider)
+	env = addIfNotPresent(envVarsAlreadyAdded, env, envVarIniClusterPublicHostname, b.settings.ClusterPublicHostname)
 	return env
 }

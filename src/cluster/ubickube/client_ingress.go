@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	akashIngressClassName = "ubic-ingress-class"
+	iniIngressClassName = "ubic-ingress-class"
 )
 
 func kubeNginxIngressAnnotations(directive ctypes.ConnectHostnameToDeploymentDirective) map[string]string {
@@ -81,7 +81,7 @@ func (c *client) ConnectHostnameToDeployment(ctx context.Context, directive ctyp
 	labels[builder.UbicManagedLabelName] = "true"
 	builder.AppendLeaseLabels(directive.LeaseID, labels)
 
-	ingressClassName := akashIngressClassName
+	ingressClassName := iniIngressClassName
 	obj := &netv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        ingressName,

@@ -160,7 +160,7 @@ func applyManifest(ctx context.Context, kc crdapi.Interface, b builder.Manifest)
 	fmt.Println("applyManifest ", b.Name(), b.NS())
 	obj, err := kc.UbicnetV1().Manifests(b.NS()).Get(ctx, b.Name(), metav1.GetOptions{})
 
-	metricsutils.IncCounterVecWithLabelValuesFiltered(kubeCallsCounter, "akash-manifests-get", err, errors.IsNotFound)
+	metricsutils.IncCounterVecWithLabelValuesFiltered(kubeCallsCounter, "ini-manifests-get", err, errors.IsNotFound)
 
 	switch {
 	case err == nil:
@@ -168,14 +168,14 @@ func applyManifest(ctx context.Context, kc crdapi.Interface, b builder.Manifest)
 		obj, err = b.Update(obj)
 		if err == nil {
 			_, err = kc.UbicnetV1().Manifests(b.NS()).Update(ctx, obj, metav1.UpdateOptions{})
-			metricsutils.IncCounterVecWithLabelValues(kubeCallsCounter, "ubic-manifests-update", err)
+			metricsutils.IncCounterVecWithLabelValues(kubeCallsCounter, "ini-manifests-update", err)
 		}
 	case errors.IsNotFound(err):
 		fmt.Println("applymanifest create")
 		obj, err = b.Create()
 		if err == nil {
 			_, err = kc.UbicnetV1().Manifests(b.NS()).Create(ctx, obj, metav1.CreateOptions{})
-			metricsutils.IncCounterVecWithLabelValues(kubeCallsCounter, "ubic-manifests-create", err)
+			metricsutils.IncCounterVecWithLabelValues(kubeCallsCounter, "ini-manifests-create", err)
 		}
 	}
 	return err

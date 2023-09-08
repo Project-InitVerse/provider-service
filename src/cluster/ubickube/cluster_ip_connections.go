@@ -89,7 +89,7 @@ func (c *client) DeclareIP(ctx context.Context, lID ctypes.LeaseID, serviceName 
 			Labels: labels,
 		},
 		Spec: ubictypes.ProviderLeasedIPSpec{
-			LeaseID:      ubictypes.LeaseIDFromUbictype(lID),
+			LeaseID:      ubictypes.LeaseIDFromInitype(lID),
 			ServiceName:  serviceName,
 			ExternalPort: externalPort,
 			SharingKey:   sharingKey,
@@ -173,7 +173,7 @@ func (c *client) ObserveIPState(ctx context.Context) (<-chan v1.IPResourceEvent,
 	for i, v := range data {
 		ownerAddr := common.HexToAddress(v.Spec.LeaseID.Owner)
 		providerAddr := common.HexToAddress(v.Spec.LeaseID.Provider)
-		leaseID, err := v.Spec.LeaseID.ToUbicType()
+		leaseID, err := v.Spec.LeaseID.ToIniType()
 		if err != nil {
 			return nil, err
 		}
@@ -219,7 +219,7 @@ func (c *client) ObserveIPState(ctx context.Context) (<-chan v1.IPResourceEvent,
 
 				ownerAddr := common.HexToAddress(plip.Spec.LeaseID.Owner)
 				providerAddr := common.HexToAddress(plip.Spec.LeaseID.Provider)
-				leaseID, err := plip.Spec.LeaseID.ToUbicType()
+				leaseID, err := plip.Spec.LeaseID.ToIniType()
 				if err != nil {
 					c.log.Error("invalid lease ID", "err", err)
 					continue // Ignore event

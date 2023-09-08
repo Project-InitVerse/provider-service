@@ -179,7 +179,7 @@ func (b *netPol) Create() ([]*netv1.NetworkPolicy, error) { // nolint:golint,unp
 		// If no ports are found, skip this service
 		if len(ports) != 0 {
 			// Make a network policy just to open these ports to incoming traffic
-			policyName := fmt.Sprintf("akash-%s-np", serviceName)
+			policyName := fmt.Sprintf("ini-%s-np", serviceName)
 			policy := netv1.NetworkPolicy{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels:    b.labels(),
@@ -207,7 +207,7 @@ func (b *netPol) Create() ([]*netv1.NetworkPolicy, error) { // nolint:golint,unp
 
 		if len(portsWithIP) != 0 {
 			// Make a network policy just to open these ports to incoming traffic from outside the cluster
-			policyName := fmt.Sprintf("akash-%s-ip", serviceName)
+			policyName := fmt.Sprintf("ini-%s-ip", serviceName)
 			policy := netv1.NetworkPolicy{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels:    b.labels(),

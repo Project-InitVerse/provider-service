@@ -27,7 +27,7 @@ func (cs clusterStorage) dup() clusterStorage {
 	return res
 }
 
-func rpNewFromAkash(res crd.ResourcePair) *resourcePair {
+func rpNewFromIni(res crd.ResourcePair) *resourcePair {
 	return &resourcePair{
 		allocatable: *resource.NewQuantity(int64(res.Allocatable), resource.DecimalSI),
 		allocated:   *resource.NewQuantity(int64(res.Allocated), resource.DecimalSI),

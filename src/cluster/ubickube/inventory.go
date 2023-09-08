@@ -271,12 +271,12 @@ func (c *client) fetchStorage(ctx context.Context) (clusterStorage, error) {
 
 	cstorage := make(clusterStorage)
 
-	// TODO - figure out if we can get this back via ServiceDiscoveryAgent query akash-services inventory-operator api
+	// TODO - figure out if we can get this back via ServiceDiscoveryAgent query ini-services inventory-operator api
 	// discover inventory operator
 	// empty namespace mean search through all namespaces
 	svcResult, err := c.kc.CoreV1().Services(corev1.NamespaceAll).List(ctx, metav1.ListOptions{
 		LabelSelector: builder.UbicManagedLabelName + "=true" +
-			",app.kubernetes.io/name=akash" +
+			",app.kubernetes.io/name=ini" +
 			",app.kubernetes.io/instance=inventory" +
 			",app.kubernetes.io/component=operator",
 	})
@@ -321,14 +321,14 @@ func (c *client) fetchStorage(ctx context.Context) (clusterStorage, error) {
 			continue
 		}
 
-		cstorage[storage.Class] = rpNewFromAkash(storage.ResourcePair)
+		cstorage[storage.Class] = rpNewFromIni(storage.ResourcePair)
 	}
 
 	return cstorage, nil
 }
 
 func (c *client) fetchActiveNodes(ctx context.Context, cstorage clusterStorage) (map[string]*node, error) {
-	// todo filter nodes by akash.network label
+	// todo filter nodes by ini.network label
 	knodes, err := c.kc.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	label := metricsutils.SuccessLabel
 	if err != nil {
