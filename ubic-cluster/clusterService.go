@@ -105,8 +105,8 @@ func (us *UbicService) NewChallengeDeployManager(
 			}
 			for _, group := range groupsIn {
 				for key := range group.Services {
-					fmt.Println("enter lease id ", strconv.FormatUint(seed+uint64(i), 10))
-					porSeed := "por_seed=" + strconv.FormatUint(seed+uint64(i), 10)
+					fmt.Println("enter lease id ", strconv.FormatUint(seed+uint64(seq), 10))
+					porSeed := "por_seed=" + strconv.FormatUint(seed+uint64(seq), 10)
 					commit := "commit_url=" + commitURL + ""
 					taskID := "task_id=" + strconv.FormatInt(_taskID, 10)
 					group.Services[key].Env = append(group.Services[key].Env, porSeed)
