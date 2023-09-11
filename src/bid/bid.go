@@ -499,17 +499,18 @@ func (bs *Service) endChallengeTime() {
 	log.Println("in handle end challenge time")
 	info := bs.getChallengeInfo(bs.Conf.ProviderAddress)
 	if info != nil {
-		if uint64(info.State) == challengeCreateState {
-			lids, ok := bs.ChallengeLidsMap.Load(challengeLids)
-			if ok {
-				for _, lid := range lids.([]ctypes.LeaseID) {
-					bs.Cluster.CloseManager(lid)
-				}
-				bs.ChallengeLidsMap.Delete(challengeLids)
+		//if uint64(info.State) == challengeCreateState {
+		lids, ok := bs.ChallengeLidsMap.Load(challengeLids)
+		if ok {
+			for _, lid := range lids.([]ctypes.LeaseID) {
+				bs.Cluster.CloseManager(lid)
 			}
-			bs.ChallengeLidsMap.Store("challenge", false)
-			bs.endChallenge()
+			bs.ChallengeLidsMap.Delete(challengeLids)
 		}
+		bs.ChallengeLidsMap.Store("challenge", false)
+		bs.endChallenge()
+		//}
+
 	}
 }
 
