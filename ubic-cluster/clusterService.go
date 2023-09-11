@@ -115,7 +115,6 @@ func (us *UbicService) NewChallengeDeployManager(
 					fmt.Println(group.Services)
 				}
 
-				ret = append(ret, lidChallenge)
 				deployManager := cluster.NewUbicDeploymentManager(context.Background(),
 					us.UbicKubeClient,
 					lidChallenge,
@@ -177,6 +176,7 @@ func (us *UbicService) NewChallengeDeployManager(
 	}
 	for r := range result {
 		us.Managers[r.LeaseID] = r.DeployManager
+		ret = append(ret, r.LeaseID)
 	}
 	return ret, nil
 }
