@@ -468,6 +468,7 @@ func (bs *Service) handleChallenge(challenge *util.NeedChallenge) {
 			return
 		}
 
+		log.Println("store lids: ", lids)
 		bs.ChallengeLidsMap.Store(challengeLids, lids)
 		timeout := bs.getChallengeTimeout()
 		bs.EndChallengeTimeout = time.After(time.Duration(timeout) * time.Second)
@@ -486,6 +487,7 @@ func (bs *Service) handleChallengeEnd(challenge *util.ChallengeEnd) {
 			return
 		}
 		lids, ok := bs.ChallengeLidsMap.Load(challengeLids)
+		log.Println("load lids: ", lids)
 		if ok {
 			for _, lid := range lids.([]ctypes.LeaseID) {
 				bs.Cluster.CloseManager(lid)

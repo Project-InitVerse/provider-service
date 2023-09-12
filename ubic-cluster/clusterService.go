@@ -95,8 +95,11 @@ func (us *UbicService) NewChallengeDeployManager(
 	ret := make([]ctypes.LeaseID, 0)
 
 	result := make(chan *DeployResult, challengeCount)
+	var wg sync.WaitGroup
+	wg.Add(int(challengeCount))
 	for i := uint64(0); i < challengeCount; i++ {
 		go func(seq uint64) {
+			defer wg.Done()
 			groupsIn, _ := sdlFile.Manifest()
 			lidChallenge := ctypes.LeaseID{
 				Owner:    "Owner",
@@ -129,51 +132,9 @@ func (us *UbicService) NewChallengeDeployManager(
 				}
 			}
 		}(i)
-		//groupsIn, _ := sdlFile.Manifest()
-		//lidChallenge := ctypes.LeaseID{
-		//	Owner:    "Owner",
-		//	OSeq:     i,
-		//	Provider: "challengeProvider",
-		//}
-		//for _, group := range groupsIn {
-		//	for key := range group.Services {
-		//		fmt.Println("enter lease id ", strconv.FormatUint(seed+uint64(i), 10))
-		//		porSeed := "por_seed=" + strconv.FormatUint(seed+uint64(i), 10)
-		//		commit := "commit_url=" + commitURL + ""
-		//		taskID := "task_id=" + strconv.FormatInt(_taskID, 10)
-		//		group.Services[key].Env = append(group.Services[key].Env, porSeed)
-		//		group.Services[key].Env = append(group.Services[key].Env, commit)
-		//		group.Services[key].Env = append(group.Services[key].Env, taskID)
-		//		fmt.Println(group.Services)
-		//	}
-		//
-		//	ret = append(ret, lidChallenge)
-		//	deployManager := cluster.NewUbicDeploymentManager(context.Background(),
-		//		us.UbicKubeClient,
-		//		lidChallenge,
-		//		us.UbicLog,
-		//		&group,
-		//		us.Hostnames,
-		//		us.Config,
-		//		true)
-		//	us.Managers[lidChallenge] = deployManager
-		//	/*
-		//		ret := make(map[string]interface{}, 0)
-		//		exist, groups, _ := us.UbicKubeClient.GetManifestGroup(context.Background(), lidChallenge)
-		//		if exist {
-		//			for _, service := range groups.Services {
-		//				s, _ := us.UbicKubeClient.ServiceStatus(context.Background(), lidChallenge, service.Name)
-		//				ret[service.Name] = s.URIs
-		//			}
-		//		}
-		//		result, err := json.Marshal(ret)
-		//		if err != nil {
-		//			fmt.Println(err.Error())
-		//			return "", nil
-		//		}
-		//		return string(result), nil*/
-		//}
 	}
+	wg.Wait()
+	close(result)
 	for r := range result {
 		us.Managers[r.LeaseID] = r.DeployManager
 		ret = append(ret, r.LeaseID)
