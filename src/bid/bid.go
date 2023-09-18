@@ -133,7 +133,7 @@ func (bs *Service) initExistDeployment() {
 	if len(leaseChallenge) > 0 {
 		bs.ChallengeLidsMap.Store(challengeLids, leaseChallenge)
 		bs.ChallengeLidsMap.Store(challengeState, true)
-		timeout := bs.getChallengeTimeout()
+		timeout := bs.getChallengeTimeout() + int64(len(leaseChallenge)/5)
 		bs.EndChallengeTimeout = time.After(time.Duration(timeout) * time.Second)
 	} else {
 		bs.ChallengeLidsMap.Store(challengeState, false)
@@ -470,7 +470,7 @@ func (bs *Service) handleChallenge(challenge *util.NeedChallenge) {
 
 		log.Println("store lids: ", lids)
 		bs.ChallengeLidsMap.Store(challengeLids, lids)
-		timeout := bs.getChallengeTimeout()
+		timeout := bs.getChallengeTimeout() + int64(len(lids)/5)
 		bs.EndChallengeTimeout = time.After(time.Duration(timeout) * time.Second)
 	}
 }
