@@ -202,9 +202,11 @@ replace (
 	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 	github.com/hashicorp/vault/sdk => github.com/hashicorp/vault/sdk v0.6.1
 	github.com/kubernetes-incubator/external-storage => github.com/libopenstorage/external-storage v0.20.4-openstorage-rc3
+	github.com/ovrclk/akash v0.20.0 => github.com/akash-network/node v0.20.0
+	github.com/ovrclk/provider-services v0.1.0 => github.com/akash-network/provider v0.1.0
 	github.com/portworx/sched-ops => github.com/portworx/sched-ops v0.20.4-openstorage-rc3
 	github.com/tencentcloud/tencentcloud-sdk-go => github.com/tencentcloud/tencentcloud-sdk-go v1.0.175
-	github.com/tendermint/tendermint => github.com/ovrclk/tendermint v0.34.21-akash.2
+	github.com/tendermint/tendermint => github.com/akash-network/tendermint v0.34.21-akash.2
 )
 
 exclude (

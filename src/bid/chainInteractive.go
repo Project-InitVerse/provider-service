@@ -848,7 +848,15 @@ func (bs *Service) getChallengeSdl() []byte {
 		log.Println("getChallengeInfo error", err.Error())
 		return nil
 	}
-	sdlTrx, _, _ := bs.Client.TransactionByHash(context.Background(), common.HexToHash(sdlTrxID.Text(16)))
+	sdlTrx, pending, err := bs.Client.TransactionByHash(context.Background(), common.HexToHash(sdlTrxID.Text(16)))
+	if pending {
+		log.Println("getChallengeInfo transaction is pending")
+		return nil
+	}
+	if err != nil {
+		log.Println("getChallengeInfo error", err.Error())
+		return nil
+	}
 	return sdlTrx.Data()
 }
 func (bs *Service) getChallengeInfo(providerOwner string) *util.ValidatorFactoryproviderChallengeInfo {
