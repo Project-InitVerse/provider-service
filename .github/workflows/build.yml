@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - "master"
+      - "feat/incluster"
   pull_request:
     branches:
     - "master"
