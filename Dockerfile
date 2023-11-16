@@ -7,4 +7,6 @@ RUN apk add --no-cache ca-certificates
 
 ADD application .
 
-ENTRYPOINT ["/app/application"]
+EXPOSE 80
+
+CMD ["sh", "./docker-start.sh"]
