@@ -3,10 +3,13 @@ package rest
 import (
 	"context"
 	"crypto/tls"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/tendermint/tendermint/libs/log"
 	"net"
 	"net/http"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/rs/cors"
+	"github.com/tendermint/tendermint/libs/log"
+
 	"providerService/src/config"
 	gwutils "providerService/src/gateway/utils"
 	ubic_cluster "providerService/ubic-cluster"
@@ -27,7 +30,7 @@ func NewServer(
 	// nolint: gosec
 	srv := &http.Server{
 		Addr:    address,
-		Handler: newRouter(log, pid, pclient, clusterConfig),
+		Handler: cors.Default().Handler(newRouter(log, pid, pclient, clusterConfig)),
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
