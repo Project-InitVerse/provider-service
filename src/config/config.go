@@ -51,7 +51,7 @@ func LoadConfig(c *viper.Viper) *ProviderConfig {
 	//c = viper.New()
 	//fmt.Println("c1",c)
 	c.SetConfigName("config")
-	c.AddConfigPath(".")
+	c.AddConfigPath("config")
 	c.SetConfigType("json")
 	c.SetDefault("OrderFactory", "")
 	if err := c.ReadInConfig(); err != nil {
