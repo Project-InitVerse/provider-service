@@ -262,6 +262,9 @@ func leaseShellHandler(log log.Logger, ubicService *ubic_cluster.UbicService, cc
 		upgrader := websocket.Upgrader{
 			ReadBufferSize:  0,
 			WriteBufferSize: 0,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
 		}
 
 		shellWs, err := upgrader.Upgrade(rw, req, nil)
