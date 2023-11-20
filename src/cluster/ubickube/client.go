@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	manifest "github.com/ovrclk/akash/manifest/v2beta1"
+	"github.com/ovrclk/akash/sdl"
+	sdlutil "github.com/ovrclk/akash/sdl/util"
+	metricsutils "github.com/ovrclk/akash/util/metrics"
+	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -15,16 +20,9 @@ import (
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-
-	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
-
-	manifest "github.com/ovrclk/akash/manifest/v2beta1"
-	"github.com/ovrclk/akash/sdl"
-	sdlutil "github.com/ovrclk/akash/sdl/util"
-	metricsutils "github.com/ovrclk/akash/util/metrics"
-	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
+	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	"providerService/src/cluster"
 	ctypes "providerService/src/cluster/types/v1"

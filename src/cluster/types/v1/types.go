@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"context"
 	"io"
-	corev1 "k8s.io/api/core/v1"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
-
 	manifest "github.com/ovrclk/akash/manifest/v2beta1"
 	"github.com/ovrclk/akash/sdl"
 	types "github.com/ovrclk/akash/types/v1beta2"
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
