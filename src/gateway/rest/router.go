@@ -474,6 +474,9 @@ func leaseKubeEventsHandler(log log.Logger, cclient cluster.UbicReadClient) http
 		upgrader := websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
 		}
 
 		ws, err := upgrader.Upgrade(w, r, nil)
@@ -579,6 +582,9 @@ func leaseLogsHandler(log log.Logger, cclient cluster.UbicReadClient) http.Handl
 		upgrader := websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
 		}
 
 		ws, err := upgrader.Upgrade(w, r, nil)
