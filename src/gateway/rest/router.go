@@ -793,11 +793,11 @@ done:
 				ReportingController: evt.ReportingController,
 				ReportingInstance:   evt.ReportingInstance,
 				Reason:              evt.Reason,
-				Note:                evt.Note,
+				Note:                evt.Message,
 				Object: cltypes.LeaseEventObject{
-					Kind:      evt.Regarding.Kind,
-					Namespace: evt.Regarding.Namespace,
-					Name:      evt.Regarding.Name,
+					Kind:      evt.InvolvedObject.Kind,
+					Namespace: evt.InvolvedObject.Namespace,
+					Name:      evt.InvolvedObject.Name,
 				},
 			}); err != nil {
 				break done

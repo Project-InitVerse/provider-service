@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	corev1 "k8s.io/api/core/v1"
 	"math/rand"
 	"sync"
 	"time"
@@ -19,7 +20,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/remotecommand"
 
-	eventsv1 "k8s.io/api/events/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 
@@ -475,14 +475,14 @@ func (c *nullUbicClient) LeaseEvents(ctx context.Context, lid ctypes.LeaseID, _ 
 		tm := time.NewTicker(7 * time.Second)
 		tm.Stop()
 
-		genEvent := func() *eventsv1.Event {
-			return &eventsv1.Event{
+		genEvent := func() *corev1.Event {
+			return &corev1.Event{
 				EventTime:           v1.NewMicroTime(time.Now()),
 				ReportingController: lease.group.Name,
 			}
 		}
 
-		nfollowCh := make(chan *eventsv1.Event, 1)
+		nfollowCh := make(chan *corev1.Event, 1)
 		count := 0
 		if !follow {
 			count = rand.Intn(9) // nolint: gosec
