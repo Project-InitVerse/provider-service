@@ -6,13 +6,11 @@ import (
 	"io"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"github.com/pkg/errors"
-
-	eventsv1 "k8s.io/api/events/v1"
-
 	manifest "github.com/ovrclk/akash/manifest/v2beta1"
 	"github.com/ovrclk/akash/sdl"
 	types "github.com/ovrclk/akash/types/v1beta2"
+	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 var (
@@ -170,14 +168,14 @@ type LeaseEvent struct {
 type EventsWatcher interface {
 	Shutdown()
 	Done() <-chan struct{}
-	ResultChan() <-chan *eventsv1.Event
-	SendEvent(*eventsv1.Event) bool
+	ResultChan() <-chan *corev1.Event
+	SendEvent(*corev1.Event) bool
 }
 
 type eventsFeed struct {
 	ctx    context.Context
 	cancel func()
-	feed   chan *eventsv1.Event
+	feed   chan *corev1.Event
 }
 
 // EventsWatcher is struct of eventsFeed
@@ -189,7 +187,7 @@ func NewEventsFeed(ctx context.Context) EventsWatcher {
 	return &eventsFeed{
 		ctx:    ctx,
 		cancel: cancel,
-		feed:   make(chan *eventsv1.Event),
+		feed:   make(chan *corev1.Event),
 	}
 }
 
@@ -204,7 +202,7 @@ func (e *eventsFeed) Done() <-chan struct{} {
 }
 
 // SendEvent is function
-func (e *eventsFeed) SendEvent(evt *eventsv1.Event) bool {
+func (e *eventsFeed) SendEvent(evt *corev1.Event) bool {
 	select {
 	case e.feed <- evt:
 		return true
@@ -214,7 +212,7 @@ func (e *eventsFeed) SendEvent(evt *eventsv1.Event) bool {
 }
 
 // ResultChan is function
-func (e *eventsFeed) ResultChan() <-chan *eventsv1.Event {
+func (e *eventsFeed) ResultChan() <-chan *corev1.Event {
 	return e.feed
 }
 

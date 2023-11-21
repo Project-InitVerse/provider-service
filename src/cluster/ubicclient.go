@@ -9,27 +9,20 @@ import (
 	"sync"
 	"time"
 
-	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
-
-	crd "providerService/src/ubicpkg/api/ubicnet/v1"
-
-	"github.com/ovrclk/akash/sdl"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	manifest "github.com/ovrclk/akash/manifest/v2beta1"
+	"github.com/ovrclk/akash/sdl"
+	"github.com/ovrclk/akash/types/unit"
+	types "github.com/ovrclk/akash/types/v1beta2"
+	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
 	"github.com/pkg/errors"
-	"k8s.io/client-go/tools/remotecommand"
-
-	eventsv1 "k8s.io/api/events/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
-
-	manifest "github.com/ovrclk/akash/manifest/v2beta1"
+	"k8s.io/client-go/tools/remotecommand"
 
 	ctypes "providerService/src/cluster/types/v1"
-
-	types "github.com/ovrclk/akash/types/v1beta2"
-
-	"github.com/ovrclk/akash/types/unit"
+	crd "providerService/src/ubicpkg/api/ubicnet/v1"
 	ubictypes "providerService/src/ubicpkg/api/ubicnet/v1"
 )
 
@@ -475,14 +468,14 @@ func (c *nullUbicClient) LeaseEvents(ctx context.Context, lid ctypes.LeaseID, _ 
 		tm := time.NewTicker(7 * time.Second)
 		tm.Stop()
 
-		genEvent := func() *eventsv1.Event {
-			return &eventsv1.Event{
+		genEvent := func() *corev1.Event {
+			return &corev1.Event{
 				EventTime:           v1.NewMicroTime(time.Now()),
 				ReportingController: lease.group.Name,
 			}
 		}
 
-		nfollowCh := make(chan *eventsv1.Event, 1)
+		nfollowCh := make(chan *corev1.Event, 1)
 		count := 0
 		if !follow {
 			count = rand.Intn(9) // nolint: gosec

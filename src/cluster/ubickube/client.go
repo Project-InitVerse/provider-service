@@ -5,27 +5,24 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/tendermint/tendermint/libs/log"
-	corev1 "k8s.io/api/core/v1"
-	eventsv1 "k8s.io/api/events/v1"
-	kubeErrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/version"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
-
-	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
-
 	manifest "github.com/ovrclk/akash/manifest/v2beta1"
 	"github.com/ovrclk/akash/sdl"
 	sdlutil "github.com/ovrclk/akash/sdl/util"
 	metricsutils "github.com/ovrclk/akash/util/metrics"
 	dtypes "github.com/ovrclk/akash/x/deployment/types/v1beta2"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/tendermint/tendermint/libs/log"
+	corev1 "k8s.io/api/core/v1"
+	kubeErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/util/flowcontrol"
+	metricsclient "k8s.io/metrics/pkg/client/clientset/versioned"
 
 	"providerService/src/cluster"
 	ctypes "providerService/src/cluster/types/v1"
@@ -289,7 +286,7 @@ func kubeSelectorForLease(dst *strings.Builder, lID ctypes.LeaseID) {
 	_, _ = fmt.Fprintf(dst, ",%s=%d", builder.UbicLeaseOSeqLabelName, lID.OSeq)
 }
 
-func newEventsFeedList(ctx context.Context, events []eventsv1.Event) ctypes.EventsWatcher {
+func newEventsFeedList(ctx context.Context, services string, events []corev1.Event) ctypes.EventsWatcher {
 	wtch := ctypes.NewEventsFeed(ctx)
 
 	go func() {
@@ -298,8 +295,11 @@ func newEventsFeedList(ctx context.Context, events []eventsv1.Event) ctypes.Even
 	done:
 		for _, evt := range events {
 			evt := evt
-			if !wtch.SendEvent(&evt) {
-				break done
+			name := evt.InvolvedObject.Name
+			if strings.HasPrefix(name, services) {
+				if !wtch.SendEvent(&evt) {
+					break done
+				}
 			}
 		}
 	}()
@@ -307,7 +307,7 @@ func newEventsFeedList(ctx context.Context, events []eventsv1.Event) ctypes.Even
 	return wtch
 }
 
-func newEventsFeedWatch(ctx context.Context, events watch.Interface) ctypes.EventsWatcher {
+func newEventsFeedWatch(ctx context.Context, services string, events watch.Interface) ctypes.EventsWatcher {
 	wtch := ctypes.NewEventsFeed(ctx)
 
 	go func() {
@@ -323,9 +323,12 @@ func newEventsFeedWatch(ctx context.Context, events watch.Interface) ctypes.Even
 				if !ok {
 					break done
 				}
-				evt := obj.Object.(*eventsv1.Event)
-				if !wtch.SendEvent(evt) {
-					break done
+				evt := obj.Object.(*corev1.Event)
+				name := evt.InvolvedObject.Name
+				if strings.HasPrefix(name, services) {
+					if !wtch.SendEvent(evt) {
+						break done
+					}
 				}
 			case <-wtch.Done():
 				break done
@@ -342,13 +345,9 @@ func (c *client) LeaseEvents(ctx context.Context, lid ctypes.LeaseID, services s
 	}
 
 	listOpts := metav1.ListOptions{}
-	if len(services) != 0 {
-		listOpts.LabelSelector = fmt.Sprintf(builder.UbicManifestServiceLabelName+" in (%s)", services)
-	}
-
 	var wtch ctypes.EventsWatcher
 	if follow {
-		watcher, err := c.kc.EventsV1().Events(builder.LidNS(lid)).Watch(ctx, listOpts)
+		watcher, err := c.kc.CoreV1().Events(builder.LidNS(lid)).Watch(ctx, listOpts)
 		label := metricsutils.SuccessLabel
 		if err != nil {
 			label = metricsutils.FailLabel
@@ -358,9 +357,10 @@ func (c *client) LeaseEvents(ctx context.Context, lid ctypes.LeaseID, services s
 			return nil, err
 		}
 
-		wtch = newEventsFeedWatch(ctx, watcher)
+		wtch = newEventsFeedWatch(ctx, services, watcher)
 	} else {
-		list, err := c.kc.EventsV1().Events(builder.LidNS(lid)).List(ctx, listOpts)
+		list, err := c.kc.CoreV1().Events(builder.LidNS(lid)).List(ctx, listOpts)
+		c.log.Info("list lease events", "lid", builder.LidNS(lid), "len", len(list.Items), "opts", listOpts)
 		label := metricsutils.SuccessLabel
 		if err != nil {
 			label = metricsutils.FailLabel
@@ -370,7 +370,7 @@ func (c *client) LeaseEvents(ctx context.Context, lid ctypes.LeaseID, services s
 			return nil, err
 		}
 
-		wtch = newEventsFeedList(ctx, list.Items)
+		wtch = newEventsFeedList(ctx, services, list.Items)
 	}
 
 	return wtch, nil
