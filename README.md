@@ -1,7 +1,7 @@
-# Ubic Provider Daemon
+# InitVerse Provider Daemon
 
 
-This folder contains the Ubic Provider Daemon. This piece of software listens to events emitted from the Ubic blockchain and takes actions on a connected Kubernetes cluster to provision compute capacity based on the bids that the configured provider key wins. The following are the pieces of the daemon:
+This folder contains the InitVerse Provider Daemon. This piece of software listens to events emitted from the InitVerse blockchain and takes actions on a connected Kubernetes cluster to provision compute capacity based on the bids that the configured provider key wins. The following are the pieces of the daemon:
 
 
 ## Structure
@@ -73,7 +73,7 @@ Refer to the Kubernetes Cluster official tutorial
 
 ### 2. Domain Name Review
 
-Add DNS (type A) records for your Ubic Provider related domains on your DNS hosting provider.
+Add DNS (type A) records for your InitVerse Provider related domains on your DNS hosting provider.
 ```
 *.ingress.yourdomain.com
 
