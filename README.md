@@ -40,7 +40,7 @@ The following content config the template
   "ProviderFactoryContract": "0x000000000000000000000000000000000000C003",
   "ValidatorFactoryContract": "0x000000000000000000000000000000000000C002",
   "BidTimeOut": 600,
-  "NameSpace": "ubic-service",
+  "NameSpace": "ini-service",
   "K8sConfigPath": "./admin.conf", -- Enter the access configuration file path of the k8s cluster
   "Cert": "0xB3ce612Cf77D4e2F7CD6dea0651C90bD0295b2b3",-- Please enter cert address
   "GatewayListenAddress": "0.0.0.0:8443", -- This listening address is used by the provider to provide rpc for ordinary users to query the instance status and communicate with the instance
@@ -67,11 +67,11 @@ The following content config the template
 
 use wallet to call provider factory contract
 
-### 1. install Kubernetes Cluster
+### 2. install Kubernetes Cluster
 
 Refer to the Kubernetes Cluster official tutorial
 
-### 2. Domain Name Review
+### 3. Domain Name Review
 
 Add DNS (type A) records for your InitVerse Provider related domains on your DNS hosting provider.
 ```
@@ -92,7 +92,7 @@ provider.yourdomain.com
 > provider 300 IN CNAME nodes.yourdomain.com.
 **Example DNS Configuration**
 ![img.png](img.png)
-### 3. installer ingress for Kubernetes Cluster
+### 4. installer ingress for Kubernetes Cluster
 1. Install Helm on a Kubernetes Master Node
 ```
 wget https://get.helm.sh/helm-v3.9.4-linux-amd64.tar.gz
@@ -104,27 +104,27 @@ mv linux-amd64/helm /usr/local/bin/helm
 ```
 2. Kubernetes Configurations
 ```
-kubectl create ns ubic-service
-kubectl label ns ubic-service ubic.net/name=ubic-service ubic.net=true
+kubectl create ns ini-service
+kubectl label ns ini-service ini.net/name=ini-service ini.net=true
 
 kubectl create ns ingress-nginx
 kubectl label ns ingress-nginx app.kubernetes.io/name=ingress-nginx app.kubernetes.io/instance=ingress-nginx
 
 kubectl create ns lease
-kubectl label ns lease ubic.net=true
+kubectl label ns lease ini.net=true
 kubectl apply -f ./src/ubicpkg/api/crd_v1.yaml
 ```
-3. Copy ubic-ingress-1.2.6.tgz file to the machine on which helm is installed
+3. Copy ini-ingress-1.2.6.tgz file to the machine on which helm is installed
 4. Unzip file
 ```
-tar xvfg ubic-ingress-1.2.6.tgz
+tar xvf ini-ingress-1.2.6.tgz
 ```
 5. install ingress-controller
 ```
-helm install ubic-ingress ./ubic-ingress -n ingress-nginx --set domain=ingress.youdomain.com
+helm install ini-ingress ./ini-ingress -n ingress-nginx --set domain=ingress.youdomain.com
 ```
 > TIPS. To install the Kubernate on an uninstalled server, change the ingress port mode from ClusterIP to NodePort
-### 4. Run providerService
+### 5. Run providerService
 ```
 nohup ./providerService  >> output.log 2>&1 &
 ```

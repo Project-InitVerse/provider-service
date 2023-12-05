@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	iniIngressClassName = "ubic-ingress-class"
+	iniIngressClassName = "ini-ingress-class"
 )
 
 func kubeNginxIngressAnnotations(directive ctypes.ConnectHostnameToDeploymentDirective) map[string]string {

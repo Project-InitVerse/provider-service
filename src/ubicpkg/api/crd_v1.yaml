@@ -1,12 +1,12 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: manifests.ubic.net
+  name: manifests.ini.net
   # DO NOT REMOVE resource-policy annotation!
   annotations:
     "helm.sh/resource-policy": keep
 spec:
-  group: ubic.net
+  group: ini.net
   scope: Namespaced
   names:
     plural: manifests
@@ -136,13 +136,13 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   # name must match the spec fields below, and be in the form: <plural>.<group>
-  name: providerhosts.ubic.net
+  name: providerhosts.ini.net
   # DO NOT REMOVE resource-policy annotation!
   annotations:
     "helm.sh/resource-policy": keep
 spec:
   # group name to use for REST API: /apis/<group>/<version>
-  group: ubic.net
+  group: ini.net
   scope: Namespaced
   names:
     # plural name to be used in the URL: /apis/<group>/<version>/<plural>
@@ -185,13 +185,13 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   # name must match the spec fields below, and be in the form: <plural>.<group>
-  name: providerleasedips.ubic.net
+  name: providerleasedips.ini.net
   # DO NOT REMOVE resource-policy annotation!
   annotations:
     "helm.sh/resource-policy": keep
 spec:
   # group name to use for REST API: /apis/<group>/<version>
-  group: ubic.net
+  group: ini.net
   scope: Namespaced
   # list of versions supported by this CustomResourceDefinition
   versions:

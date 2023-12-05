@@ -11,7 +11,7 @@
   "ProviderFactoryContract": "0x000000000000000000000000000000000000C003",
   "ValidatorFactoryContract": "0x000000000000000000000000000000000000C002",
   "BidTimeOut": 600,
-  "NameSpace": "ubic-service",
+  "NameSpace": "ini-service",
   "K8sConfigPath": "./admin.conf",
   "Cert": "0xc2de5B03206b75BDcDB06674745437802Eaf466A",
   "GatewayListenAddress": "0.0.0.0:8443",

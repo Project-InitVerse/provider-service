@@ -70,7 +70,7 @@ loop:
 	// Check that the pod exists
 	pods, err := c.kc.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		TypeMeta:      metav1.TypeMeta{},
-		LabelSelector: fmt.Sprintf("ubic.net/manifest-service=%s", serviceName),
+		LabelSelector: fmt.Sprintf("ini.net/manifest-service=%s", serviceName),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed getting pods in namespace %q", err, namespace)

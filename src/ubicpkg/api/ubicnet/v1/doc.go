@@ -1,7 +1,7 @@
 // +k8s:deepcopy-gen=package
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:openapi-gen=true
-// +groupName=ubic.net
+// +groupName=ini.net
 
 // Package v1 is the initial version of types which integrate with the Kubernetes API.
 //

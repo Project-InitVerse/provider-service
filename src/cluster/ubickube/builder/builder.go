@@ -18,19 +18,19 @@ import (
 
 // ubic kube const val
 const (
-	UbicManagedLabelName         = "ubic.net"
-	UbicManifestServiceLabelName = "ubic.net/manifest-service"
-	UbicNetworkStorageClasses    = "ubic.net/storageclasses"
-	UbicServiceTarget            = "ubic.net/service-target"
+	UbicManagedLabelName         = "ini.net"
+	UbicManifestServiceLabelName = "ini.net/manifest-service"
+	UbicNetworkStorageClasses    = "ini.net/storageclasses"
+	UbicServiceTarget            = "ini.net/service-target"
 	UbicMetalLB                  = "metal-lb"
 
-	ubicNetworkNamespace = "ubic.net/namespace"
+	ubicNetworkNamespace = "ini.net/namespace"
 
-	UbicLeaseOwnerLabelName    = "ubic.net/lease.id.owner"
-	UbicLeaseDSeqLabelName     = "ubic.net/lease.id.dseq"
-	UbicLeaseOSeqLabelName     = "ubic.net/lease.id.oseq"
-	UbicLeaseProviderLabelName = "ubic.net/lease.id.provider"
-	ubicDeploymentPolicyName   = "ubic-deployment-restrictions"
+	UbicLeaseOwnerLabelName    = "ini.net/lease.id.owner"
+	UbicLeaseDSeqLabelName     = "ini.net/lease.id.dseq"
+	UbicLeaseOSeqLabelName     = "ini.net/lease.id.oseq"
+	UbicLeaseProviderLabelName = "ini.net/lease.id.provider"
+	ubicDeploymentPolicyName   = "ini-deployment-restrictions"
 )
 
 const runtimeClassNoneValue = "none"

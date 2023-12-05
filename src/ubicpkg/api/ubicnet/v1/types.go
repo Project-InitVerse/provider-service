@@ -75,7 +75,7 @@ func NewManifest(ns string, lid ctypes.LeaseID, mgroup *maniv2beta1.Group) (*Man
 	return &Manifest{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Manifest",
-			APIVersion: "ubic.net/v1",
+			APIVersion: "ini.net/v1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterutil.LeaseIDToNamespace(lid),

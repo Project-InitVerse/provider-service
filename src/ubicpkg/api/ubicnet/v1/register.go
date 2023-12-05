@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	crdGroup   = "ubic.net"
+	crdGroup   = "ini.net"
 	crdVersion = "v1"
 )
 
