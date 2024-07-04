@@ -24,23 +24,24 @@ import (
 
 func (bs *Service) getProviderAddr() string {
 	providerFactoryAddr := common.HexToAddress(bs.Conf.ProviderFactoryContract)
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
-	if err != nil {
-		log.Println("getProviderAddr:turn private key error", err.Error())
-		return bs.Conf.ProviderAddress
-	}
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Println("getProviderAddr: publicKey is not of type *ecdsa.PublicKey", err.Error())
-		return bs.Conf.ProviderAddress
-	}
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	/*
+		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+		if err != nil {
+			log.Println("getProviderAddr:turn private key error", err.Error())
+			return bs.Conf.ProviderContract
+		}
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			log.Println("getProviderAddr: publicKey is not of type *ecdsa.PublicKey", err.Error())
+			return bs.Conf.ProviderContract
+		}*/
+	fromAddress := common.HexToAddress(bs.Conf.ProviderAddress)
 	method := "getProvideContract"
 	data, err := bs.Abi[ProviderFactoryName].Pack(method, fromAddress)
 	if err != nil {
 		log.Println("getProviderAddr:pack abi error", err.Error())
-		return bs.Conf.ProviderAddress
+		return bs.Conf.ProviderContract
 	}
 	msg := ethereum.CallMsg{
 		From: fromAddress,
@@ -51,13 +52,13 @@ func (bs *Service) getProviderAddr() string {
 	result, err := bs.Client.CallContract(context.Background(), msg, nil)
 	if err != nil {
 		log.Println("getProviderAddr:call contract error", err.Error())
-		return bs.Conf.ProviderAddress
+		return bs.Conf.ProviderContract
 	}
 	return common.BytesToAddress(result).String()
 }
 func (bs *Service) getTotalResource() resourceStorage {
 	providerContractAddr := common.HexToAddress(bs.Conf.ProviderContract)
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	var ret resourceStorage
 	ret.CPUCount = new(big.Int).SetInt64(0)
 	ret.MemoryCount = new(big.Int).SetInt64(0)
@@ -124,58 +125,82 @@ func (bs *Service) quoteBidOrder(orderContractAddr string) {
 	}
 	fmt.Println("order state is ", orderState)
 	if int64(orderState) == orderStatusQuoting {
-		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+		orderObj := util.QuoteBidOrder{
+			ProviderAddr: bs.Conf.ProviderContract,
+			OrderAddr:    orderContractAddr,
+			CpuPrice:     bs.Conf.CPUPrice,
+			MemoryPrice:  bs.Conf.MemoryPrice,
+			StoragePrice: bs.Conf.StoragePrice,
+		}
+		privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 		if err != nil {
 			log.Println("quoteBidOrder:turn ecdsa", err.Error())
 			return
 		}
-		publicKey := privateKey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			log.Println("quoteBidOrder: publicKey is not of type *ecdsa.PublicKey")
+		orderObj.Sign(privateKey)
+		if orderObj.SignMsg == "" {
+			log.Println("quoteBidOrder: Communication sign fail")
 			return
 		}
-		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			log.Println("quoteBidOrder:get nonce error")
+		success, trxID := orderObj.Send(bs.Conf.PoolURI)
+		if !success {
+			log.Println("quoteBidOrder: send trx to pool fail")
 			return
 		}
-		value := big.NewInt(0)      // in wei (1 eth)
-		gasLimit := uint64(3000000) // in units
-		gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
-		if err != nil {
-			log.Println("quoteBidOrder:SuggestGasPrice error")
-			return
-		}
-		toAddress := common.HexToAddress(orderContractAddr)
+		log.Println("quoteBidOrder tx sent: ", trxID)
+		/*
+			privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+			if err != nil {
+				log.Println("quoteBidOrder:turn ecdsa", err.Error())
+				return
+			}
+			publicKey := privateKey.Public()
+			publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+			if !ok {
+				log.Println("quoteBidOrder: publicKey is not of type *ecdsa.PublicKey")
+				return
+			}
+			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+			nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
+			if err != nil {
+				log.Println("quoteBidOrder:get nonce error")
+				return
+			}
+			value := big.NewInt(0)      // in wei (1 eth)
+			gasLimit := uint64(3000000) // in units
+			gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
+			if err != nil {
+				log.Println("quoteBidOrder:SuggestGasPrice error")
+				return
+			}
+			toAddress := common.HexToAddress(orderContractAddr)
 
-		cpuPrice, _ := new(big.Int).SetString(bs.Conf.CPUPrice, 10)
-		memoryPrice, _ := new(big.Int).SetString(bs.Conf.MemoryPrice, 10)
-		storagePrice, _ := new(big.Int).SetString(bs.Conf.StoragePrice, 10)
-		method := "quote"
-		data, _ := bs.Abi[OrderBaseName].Pack(method, cpuPrice, memoryPrice, storagePrice)
-		c := &types.LegacyTx{
-			Nonce:    nonce,
-			To:       &toAddress,
-			Value:    value,
-			Gas:      gasLimit,
-			GasPrice: gasPrice,
-			Data:     data,
-		}
-		tx := types.NewTx(c)
-		chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-		if err != nil {
-			log.Println("quoteBidOrder:SignTx error")
-			return
-		}
-		err = bs.Client.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			log.Println("quoteBidOrder:SendTransaction error")
-			return
-		}
-		log.Println("quoteBidOrder tx sent: ", signedTx.Hash().Hex())
+			cpuPrice, _ := new(big.Int).SetString(bs.Conf.CPUPrice, 10)
+			memoryPrice, _ := new(big.Int).SetString(bs.Conf.MemoryPrice, 10)
+			storagePrice, _ := new(big.Int).SetString(bs.Conf.StoragePrice, 10)
+			method := "quote"
+			data, _ := bs.Abi[OrderBaseName].Pack(method, cpuPrice, memoryPrice, storagePrice)
+			c := &types.LegacyTx{
+				Nonce:    nonce,
+				To:       &toAddress,
+				Value:    value,
+				Gas:      gasLimit,
+				GasPrice: gasPrice,
+				Data:     data,
+			}
+			tx := types.NewTx(c)
+			chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+			signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+			if err != nil {
+				log.Println("quoteBidOrder:SignTx error")
+				return
+			}
+			err = bs.Client.SendTransaction(context.Background(), signedTx)
+			if err != nil {
+				log.Println("quoteBidOrder:SendTransaction error")
+				return
+			}
+			log.Println("quoteBidOrder tx sent: ", signedTx.Hash().Hex())*/
 	}
 }
 func (bs *Service) submitURI(orderContractAddr string, uri string) {
@@ -191,59 +216,81 @@ func (bs *Service) submitURI(orderContractAddr string, uri string) {
 
 	log.Println("uri is ", uri)
 	if resultURI != uri && int64(resultState) == orderStatusRunning {
-		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+		submitObj := util.SubmitURI{
+			ProviderAddr: bs.Conf.ProviderContract,
+			OrderAddr:    orderContractAddr,
+			NewUrl:       uri,
+		}
+		privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 		if err != nil {
-			log.Println("submitURI:HexToECDSA", err.Error())
+			log.Println("submitURI:turn ecdsa", err.Error())
 			return
 		}
-		publicKey := privateKey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			log.Println("submitURI:is not of type *ecdsa.PublicKey", err.Error())
+		submitObj.Sign(privateKey)
+		if submitObj.SignMsg == "" {
+			log.Println("submitURI: Communication sign fail")
 			return
 		}
-		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			log.Println("submitURI:PendingNonceAt", err.Error())
+		success, trxID := submitObj.Send(bs.Conf.PoolURI)
+		if !success {
+			log.Println("submitURI: send trx to pool fail")
 			return
 		}
-		value := big.NewInt(0)      // in wei (1 eth)
-		gasLimit := uint64(3000000) // in units
-		gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
-		if err != nil {
-			log.Println("submitURI:SuggestGasPrice", err.Error())
-			return
-		}
-		toAddress := common.HexToAddress(orderContractAddr)
+		log.Println("submitURI tx sent: ", trxID)
+		/*
+			privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+			if err != nil {
+				log.Println("submitURI:HexToECDSA", err.Error())
+				return
+			}
+			publicKey := privateKey.Public()
+			publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+			if !ok {
+				log.Println("submitURI:is not of type *ecdsa.PublicKey", err.Error())
+				return
+			}
+			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+			nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
+			if err != nil {
+				log.Println("submitURI:PendingNonceAt", err.Error())
+				return
+			}
+			value := big.NewInt(0)      // in wei (1 eth)
+			gasLimit := uint64(3000000) // in units
+			gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
+			if err != nil {
+				log.Println("submitURI:SuggestGasPrice", err.Error())
+				return
+			}
+			toAddress := common.HexToAddress(orderContractAddr)
 
-		method := "submit_server_uri"
-		data, _ := bs.Abi[OrderBaseName].Pack(method, uri)
-		c := &types.LegacyTx{
-			Nonce:    nonce,
-			To:       &toAddress,
-			Value:    value,
-			Gas:      gasLimit,
-			GasPrice: gasPrice,
-			Data:     data,
-		}
-		tx := types.NewTx(c)
-		chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-		if err != nil {
-			log.Println("submitURI:SignTx", err.Error())
-			return
-		}
-		err = bs.Client.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			log.Println("submitURI:SendTransaction", err.Error())
-			return
-		}
-		log.Println("submit uri tx sent: ", signedTx.Hash().Hex())
+			method := "submit_server_uri"
+			data, _ := bs.Abi[OrderBaseName].Pack(method, uri)
+			c := &types.LegacyTx{
+				Nonce:    nonce,
+				To:       &toAddress,
+				Value:    value,
+				Gas:      gasLimit,
+				GasPrice: gasPrice,
+				Data:     data,
+			}
+			tx := types.NewTx(c)
+			chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+			signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+			if err != nil {
+				log.Println("submitURI:SignTx", err.Error())
+				return
+			}
+			err = bs.Client.SendTransaction(context.Background(), signedTx)
+			if err != nil {
+				log.Println("submitURI:SendTransaction", err.Error())
+				return
+			}
+			log.Println("submit uri tx sent: ", signedTx.Hash().Hex())*/
 	}
 }
 func (bs *Service) getSdlByID(orderContractAddr string) []byte {
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
 		log.Println("getSdlByID:HexToECDSA", err.Error())
 		return nil
@@ -271,7 +318,7 @@ func (bs *Service) getSdlByID(orderContractAddr string) []byte {
 	return sdlTrx.Data()
 }
 func (bs *Service) getOwner(orderContractAddr string) (common.Address, error) {
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
 		log.Println("getOwner:HexToECDSA", err.Error())
 		return common.Address{}, err
@@ -303,7 +350,7 @@ func (bs *Service) getOwner(orderContractAddr string) (common.Address, error) {
 	return common.BytesToAddress(resultAddress), nil
 }
 func (bs *Service) getOrderState(index uint64) (int64, string, error) {
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
 		return 0, "", err
 	}
@@ -352,7 +399,7 @@ func (bs *Service) getOrderState(index uint64) (int64, string, error) {
 	return state, hexOrderAddr.String(), nil
 }
 func (bs *Service) getOrderIndex(orderContractAddr string) (uint64, error) {
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
 		return 0, err
 	}
@@ -387,7 +434,7 @@ func (bs *Service) getOrderIndex(orderContractAddr string) (uint64, error) {
 }
 func (bs *Service) getOrderCount(orderContractAddr string) (resourceStorage, error) {
 
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
 		return resourceStorage{}, err
 	}
@@ -451,7 +498,7 @@ func (bs *Service) getOrderCount(orderContractAddr string) (resourceStorage, err
 	return ret, nil
 }
 func (bs *Service) getOrderChosenProvider(orderContractAddr string) (common.Address, error) {
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
 		return common.Address{}, err
 	}
@@ -491,59 +538,80 @@ func (bs *Service) payBill(orderContractAddr string) {
 		return
 	}
 	if int64(orderState) == orderStatusRunning {
-		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+		payBillObj := util.PayBill{
+			ProviderAddr: bs.Conf.ProviderContract,
+			OrderAddr:    orderContractAddr,
+		}
+		privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 		if err != nil {
-			log.Println("payBill HexToECDSA", err.Error())
+			log.Println("payBill:turn ecdsa", err.Error())
 			return
 		}
-		publicKey := privateKey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			log.Println("payBill publicKey is not of type *ecdsa.PublicKey")
+		payBillObj.Sign(privateKey)
+		if payBillObj.SignMsg == "" {
+			log.Println("payBill: Communication sign fail")
 			return
 		}
-		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			log.Println("payBill PendingNonceAt", err.Error())
+		success, trxID := payBillObj.Send(bs.Conf.PoolURI)
+		if !success {
+			log.Println("payBill: send trx to pool fail")
 			return
 		}
-		value := big.NewInt(0)      // in wei (1 eth)
-		gasLimit := uint64(3000000) // in units
-		gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
-		toAddress := common.HexToAddress(orderContractAddr)
-		methodBillTrx := "pay_billing"
-		dataPayBillTrx, err := bs.Abi[OrderBaseName].Pack(methodBillTrx)
-		if err != nil {
-			log.Println("payBill pack error", err.Error())
-			return
-		}
-		c := &types.LegacyTx{
-			Nonce:    nonce,
-			To:       &toAddress,
-			Value:    value,
-			Gas:      gasLimit,
-			GasPrice: gasPrice,
-			Data:     dataPayBillTrx,
-		}
-		tx := types.NewTx(c)
-		chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-		if err != nil {
-			log.Println("payBill SignTx error", err.Error())
-			return
-		}
-		err = bs.Client.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			log.Println("payBill SendTransaction error", err.Error())
-			return
-		}
-		log.Println("Pay Bill tx sent: ", signedTx.Hash().Hex())
+		log.Println("payBill tx sent: ", trxID)
+		/*
+			privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+			if err != nil {
+				log.Println("payBill HexToECDSA", err.Error())
+				return
+			}
+			publicKey := privateKey.Public()
+			publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+			if !ok {
+				log.Println("payBill publicKey is not of type *ecdsa.PublicKey")
+				return
+			}
+			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+			nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
+			if err != nil {
+				log.Println("payBill PendingNonceAt", err.Error())
+				return
+			}
+			value := big.NewInt(0)      // in wei (1 eth)
+			gasLimit := uint64(3000000) // in units
+			gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
+			toAddress := common.HexToAddress(orderContractAddr)
+			methodBillTrx := "pay_billing"
+			dataPayBillTrx, err := bs.Abi[OrderBaseName].Pack(methodBillTrx)
+			if err != nil {
+				log.Println("payBill pack error", err.Error())
+				return
+			}
+			c := &types.LegacyTx{
+				Nonce:    nonce,
+				To:       &toAddress,
+				Value:    value,
+				Gas:      gasLimit,
+				GasPrice: gasPrice,
+				Data:     dataPayBillTrx,
+			}
+			tx := types.NewTx(c)
+			chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+			signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+			if err != nil {
+				log.Println("payBill SignTx error", err.Error())
+				return
+			}
+			err = bs.Client.SendTransaction(context.Background(), signedTx)
+			if err != nil {
+				log.Println("payBill SendTransaction error", err.Error())
+				return
+			}
+			log.Println("Pay Bill tx sent: ", signedTx.Hash().Hex())*/
 	}
 
 }
 func (bs *Service) getOrderLastPayTime(orderContractAddr string) (int64, error) {
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
 		return 0, err
 	}
@@ -643,58 +711,82 @@ func (bs *Service) updateResource() {
 	if chainTotalLeft.CPUCount.Cmp(new(big.Int).SetUint64(totalTemp.CPU)) != 0 ||
 		chainTotalLeft.MemoryCount.Cmp(new(big.Int).SetUint64(totalTemp.Memory)) != 0 ||
 		chainTotalLeft.StorageCount.Cmp(new(big.Int).SetUint64(totalTemp.StorageEphemeral)) != 0 {
-		providerContractAddr := common.HexToAddress(bs.Conf.ProviderContract)
-		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+		//providerContractAddr := common.HexToAddress(bs.Conf.ProviderContract)
+		updateResourceObj := util.UpdateResource{
+			ProviderAddr: bs.Conf.ProviderContract,
+			Cpu:          new(big.Int).SetUint64(totalTemp.CPU).String(),
+			Memory:       new(big.Int).SetUint64(totalTemp.Memory).String(),
+			Storage:      new(big.Int).SetUint64(totalTemp.StorageEphemeral).String(),
+		}
+		privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 		if err != nil {
-			log.Println("updateResource:HexToECDSA", err.Error())
+			log.Println("UpdateResource:turn ecdsa", err.Error())
 			return
 		}
-		publicKey := privateKey.Public()
-		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-		if !ok {
-			log.Println("updateResource:publicKey is not of type *ecdsa.PublicKey", err.Error())
+		updateResourceObj.Sign(privateKey)
+		if updateResourceObj.SignMsg == "" {
+			log.Println("UpdateResource: Communication sign fail")
 			return
 		}
-		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-		method := "updateResource"
-		data, err := bs.Abi[ProviderName].Pack(method, new(big.Int).SetUint64(totalTemp.CPU), new(big.Int).SetUint64(totalTemp.Memory), new(big.Int).SetUint64(totalTemp.StorageEphemeral))
-		if err != nil {
-			fmt.Println("err is ", err.Error())
-		}
-		nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
-		if err != nil {
-			log.Println("updateResource:PendingNonceAt", err.Error())
+		success, trxID := updateResourceObj.Send(bs.Conf.PoolURI)
+		if !success {
+			log.Println("UpdateResource: send trx to pool fail", trxID)
 			return
 		}
-		value := big.NewInt(0)      // in wei (1 eth)
-		gasLimit := uint64(3000000) // in units
-		gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
-		if err != nil {
-			log.Println("updateResource:SuggestGasPrice", err.Error())
-			return
-		}
-		msg := &types.LegacyTx{
-			Nonce:    nonce,
-			To:       &providerContractAddr,
-			Gas:      gasLimit,
-			Value:    value,
-			GasPrice: gasPrice,
-			Data:     data,
-		}
-		tx := types.NewTx(msg)
-		chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+		log.Println("UpdateResource tx sent: ", trxID)
+		/*
+			privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+			if err != nil {
+				log.Println("updateResource:HexToECDSA", err.Error())
+				return
+			}
+			publicKey := privateKey.Public()
+			publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+			if !ok {
+				log.Println("updateResource:publicKey is not of type *ecdsa.PublicKey", err.Error())
+				return
+			}
+			fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+			method := "updateResource"
+			data, err := bs.Abi[ProviderName].Pack(method, new(big.Int).SetUint64(totalTemp.CPU), new(big.Int).SetUint64(totalTemp.Memory), new(big.Int).SetUint64(totalTemp.StorageEphemeral))
+			if err != nil {
+				fmt.Println("err is ", err.Error())
+			}
+			nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
+			if err != nil {
+				log.Println("updateResource:PendingNonceAt", err.Error())
+				return
+			}
+			value := big.NewInt(0)      // in wei (1 eth)
+			gasLimit := uint64(3000000) // in units
+			gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
+			if err != nil {
+				log.Println("updateResource:SuggestGasPrice", err.Error())
+				return
+			}
+			msg := &types.LegacyTx{
+				Nonce:    nonce,
+				To:       &providerContractAddr,
+				Gas:      gasLimit,
+				Value:    value,
+				GasPrice: gasPrice,
+				Data:     data,
+			}
+			tx := types.NewTx(msg)
+			chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
 
-		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-		if err != nil {
-			log.Println("updateResource:SignTx", err.Error())
-			return
-		}
-		err = bs.Client.SendTransaction(context.Background(), signedTx)
-		if err != nil {
-			log.Println("updateResource:SendTransaction", err.Error())
-			return
-		}
-		log.Println("update source tx sent: ", signedTx.Hash().Hex())
+			signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+			if err != nil {
+				log.Println("updateResource:SignTx", err.Error())
+				return
+			}
+			err = bs.Client.SendTransaction(context.Background(), signedTx)
+			if err != nil {
+				log.Println("updateResource:SendTransaction", err.Error())
+				return
+			}
+			log.Println("update source tx sent: ", signedTx.Hash().Hex())
+		*/
 		contractAdders := make([]string, 0)
 		contractTempAddrs := make([]string, 0)
 		bs.KeepResourceTime.Range(func(key any, value any) bool {
@@ -886,50 +978,72 @@ func (bs *Service) getChallengeTimeout() int64 {
 	return maxChallengeTime.Int64()
 }
 func (bs *Service) endChallenge() {
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	submitObj := util.EndChallenge{
+		ProviderAddr: bs.Conf.ProviderContract,
+	}
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	if err != nil {
-		log.Println("endChallenge HexToECDSA")
+		log.Println("EndChallenge:turn ecdsa", err.Error())
 		return
 	}
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Println("endChallenge publicKey is not of type *ecdsa.PublicKey")
+	submitObj.Sign(privateKey)
+	if submitObj.SignMsg == "" {
+		log.Println("EndChallenge: Communication sign fail")
 		return
 	}
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		log.Println("endChallenge PendingNonceAt")
+	success, trxID := submitObj.Send(bs.Conf.PoolURI)
+	if !success {
+		log.Println("EndChallenge: send trx to pool fail")
 		return
 	}
-	value := big.NewInt(0)      // in wei (1 eth)
-	gasLimit := uint64(3000000) // in units
-	gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
-	method := "validatorNotSubmitResult"
-	data, err := bs.Abi[ValidatorFactoryName].Pack(method, common.HexToAddress(bs.Conf.ProviderAddress))
-	if err != nil {
-		log.Println("endChallenge Pack")
-		return
-	}
-	valFactoryContract := common.HexToAddress(bs.Conf.ValidatorFactoryContract)
-	msg := &types.LegacyTx{
-		Nonce:    nonce,
-		To:       &valFactoryContract,
-		Gas:      gasLimit,
-		Value:    value,
-		GasPrice: gasPrice,
-		Data:     data,
-	}
-	tx := types.NewTx(msg)
-	chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
-	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
-	if err != nil {
-		log.Println("endChallenge SignTx")
-		return
-	}
-	err = bs.Client.SendTransaction(context.Background(), signedTx)
-	log.Println("ValidatorNotSubmitResult tx sent: ", signedTx.Hash().Hex())
+	log.Println("EndChallenge tx sent: ", trxID)
+	/*
+		privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+		if err != nil {
+			log.Println("endChallenge HexToECDSA")
+			return
+		}
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			log.Println("endChallenge publicKey is not of type *ecdsa.PublicKey")
+			return
+		}
+		fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+		nonce, err := bs.Client.PendingNonceAt(context.Background(), fromAddress)
+		if err != nil {
+			log.Println("endChallenge PendingNonceAt")
+			return
+		}
+		value := big.NewInt(0)      // in wei (1 eth)
+		gasLimit := uint64(3000000) // in units
+		gasPrice, err := bs.Client.SuggestGasPrice(context.Background())
+		method := "validatorNotSubmitResult"
+		data, err := bs.Abi[ValidatorFactoryName].Pack(method, common.HexToAddress(bs.Conf.ProviderAddress))
+		if err != nil {
+			log.Println("endChallenge Pack")
+			return
+		}
+		valFactoryContract := common.HexToAddress(bs.Conf.ValidatorFactoryContract)
+		msg := &types.LegacyTx{
+			Nonce:    nonce,
+			To:       &valFactoryContract,
+			Gas:      gasLimit,
+			Value:    value,
+			GasPrice: gasPrice,
+			Data:     data,
+		}
+		tx := types.NewTx(msg)
+		chainID, _ := new(big.Int).SetString(bs.Conf.NodeChainID, 10)
+		signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+		if err != nil {
+			log.Println("endChallenge SignTx")
+			return
+		}
+		err = bs.Client.SendTransaction(context.Background(), signedTx)
+		log.Println("ValidatorNotSubmitResult tx sent: ", signedTx.Hash().Hex())
+
+	*/
 }
 func (bs *Service) ChangeProviderInfo() {
 	provider, err := util.NewProvider(common.HexToAddress(bs.Conf.ProviderContract), bs.Client)
@@ -937,7 +1051,7 @@ func (bs *Service) ChangeProviderInfo() {
 		log.Println("changeProviderInfo error", err.Error())
 		return
 	}
-	privateKey, err := crypto.HexToECDSA(bs.Conf.SecretKey)
+	privateKey, err := crypto.HexToECDSA(bs.Conf.CommunicationPrivateKey)
 	nodeId, _ := strconv.ParseInt(bs.Conf.NodeChainID, 10, 64)
 	fmt.Println(nodeId)
 	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(nodeId))

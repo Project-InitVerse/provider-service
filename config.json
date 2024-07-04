@@ -1,13 +1,12 @@
 {
-  "NodeURL":"http://127.0.0.1:30010",
-  "NodeChainID": "226",
+  "NodeURL":"https://rpc-testnet.iniscan.com",
+  "NodeChainID": "233",
   "CPUPrice": "1000000",
   "MemoryPrice": "500000",
   "StoragePrice": "200000",
-  "SecretKey": "a37a95d042ea76c6f88db8bb68d77978e9736fe296fcc11864c0dad45a2ca14b",
-  "ProviderAddress": "0x624199661664b9EF607c02D934EA25701076C3B8",
-  "OrderFactory": "0x6f7a92952Db6EC51A0230B5f8ECF1D3D95C26BCE",
-  "ProviderContract": "0xc7529D08fE849C5d55a0275F10Da51325E3c0C3F",
+  "ProviderAddress": "0xFA14302F536E8D64fcC74344037F280f944fae02",
+  "OrderFactory": "I43Pu2y1t83ShvApZUDeCTzdL1mRAwTJgXQtH5qR4yQ1aoDZeNEkgT6ih",
+  "ProviderContract": "I43YirKASGejPCm7Rud1JLC2ifqVJqdzKTpKPLD5h3iZkcmERXaLujknC",
   "ProviderFactoryContract": "0x000000000000000000000000000000000000C003",
   "ValidatorFactoryContract": "0x000000000000000000000000000000000000C002",
   "BidTimeOut": 600,
@@ -28,6 +27,7 @@
   "HostNameServiceListenAddr": "0.0.0.0:28443",
   "HostPruneInterval": 600,
   "HostWebRefreshInterval": 5,
-  "HostRetryDelay": 3
-
+  "HostRetryDelay": 3,
+  "CommunicationPrivateKey": "",
+  "PoolURI": "http://127.0.0.1:19300"
 }

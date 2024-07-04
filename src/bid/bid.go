@@ -2,7 +2,6 @@ package bid
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"encoding/binary"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -261,17 +260,21 @@ func (bs *Service) handleBidFinal(bidFinalInfo *util.NeedCreate) {
 	}
 	bs.WgBid.Add(1)
 	defer bs.WgBid.Done()
-	privateKey, _ := crypto.HexToECDSA(bs.Conf.SecretKey)
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Println("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-		return
-	}
-	providerAddr := crypto.PubkeyToAddress(*publicKeyECDSA)
+	/*
+		privateKey, _ := crypto.HexToECDSA(bs.Conf.SecretKey)
+		publicKey := privateKey.Public()
+		publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+		if !ok {
+			log.Println("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
+			return
+		}
+
+	*/
+	providerAddr := bs.Conf.ProviderAddress
 	resource, ok := bs.KeepResource.Load(strings.ToLower(bidFinalInfo.ContractAddress))
 	bs.KeepResourceTime.Delete(strings.ToLower(bidFinalInfo.ContractAddress))
-	log.Println("in handle bid final providers ", bidFinalInfo.Provider.String(), providerAddr.String())
+	//log.Println("in handle bid final providers ", bidFinalInfo.Provider.String(), providerAddr.String())
+	log.Println("in handle bid final providers ", bidFinalInfo.Provider.String(), providerAddr)
 	if strings.ToLower(bidFinalInfo.Provider.String()) != strings.ToLower(bs.Conf.ProviderContract) {
 		if ok {
 			bs.handleResource(resource.(resourceStorage), true)

@@ -19,7 +19,6 @@ type ProviderConfig struct {
 	CPUPrice                         string
 	MemoryPrice                      string
 	StoragePrice                     string
-	SecretKey                        string
 	OrderFactory                     string
 	ProviderContract                 string
 	ValidatorFactoryContract         string
@@ -44,6 +43,8 @@ type ProviderConfig struct {
 	HostPruneInterval                int
 	HostWebRefreshInterval           int
 	HostRetryDelay                   int
+	CommunicationPrivateKey          string
+	PoolURI                          string
 }
 
 // LoadConfig get config from config.json
